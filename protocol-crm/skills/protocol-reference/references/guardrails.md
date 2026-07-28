@@ -156,7 +156,7 @@ as `find kind=automation_run`), `get_google_calendar_connect_url`,
 The original version of this list also carried `list_task_labels`, but that entry is stale: a live
 `find kind=task_label` call is exposed and directly contradicts it, so it has been dropped here.
 The remaining nine are checked against the live MCP registry by the surface-drift test that runs
-in `apps/api` CI, so treat this list as current rather than assuming the same slow drift that
+in Protocol's own CI, so treat this list as current rather than assuming the same slow drift that
 produced the `list_task_labels` mismatch.
 
 ## Write posture

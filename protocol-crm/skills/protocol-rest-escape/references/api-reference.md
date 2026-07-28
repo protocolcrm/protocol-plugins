@@ -79,7 +79,8 @@ Authorization: Bearer pk_live_<48 hex characters>
 
 This is a deliberate three-way split, not drift — mixing REST keys into `agent_connections` would
 conflate two different lifecycles/UIs, and hardening the legacy plaintext table in place risked
-breaking existing integrations
+breaking existing integrations.
+
 If you are staring at a
 `pk_` token and unsure which store it belongs to, check the substring after `pk_`: `live_` means
 `api_access_keys` (REST); no `live_` means `agent_connections` (MCP).

@@ -1,0 +1,11 @@
+{
+  "name": "protocol",
+  "owner": { "name": "Protocol" },
+  "plugins": [
+    {
+      "source": "./protocol-crm",
+      "name": "protocol-crm",
+      "description": "Operate your Protocol CRM from Claude: clients, programs, nutrition, check-ins, scheduling, and inbox triage."
+    }
+  ]
+}

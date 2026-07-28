@@ -1,0 +1,7 @@
+{
+  "name": "protocol-crm",
+  "version": "0.1.0",
+  "description": "Operate your Protocol CRM from Claude: clients, programs, nutrition, check-ins, scheduling, and inbox triage.",
+  "author": { "name": "Protocol" },
+  "homepage": "https://help.protocolcrm.com/ai-agent-claude-plugin"
+}

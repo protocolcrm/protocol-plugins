@@ -26,8 +26,9 @@ The first time you ask Claude to do something in Protocol, it opens a sign-in sc
 `api.protocolcrm.com`. Sign in and approve the connection, the same way you'd approve any app
 asking for calendar or email access, and you're connected. As part of approving, you also pick an
 access level: **Read & write** is the default and right for most coaches; pick **Send** only if
-you also want Claude to be able to fire appointment reminders and run automations on its own,
-since those two specifically need the higher level. There's no password or API key to copy for
+you also want Claude to be able to reach a client on its own. Three actions need that level:
+firing an appointment reminder now, arming a recurring one (which fires within minutes if its
+start time is now or past), and running an automation on demand. There's no password or API key to copy for
 normal, everyday use.
 
 ## Turn on auto-update

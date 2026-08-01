@@ -8,7 +8,7 @@ carry the same nine coaching skills, so the assistant behaves the same way which
 
 | Assistant | Where | How you install it |
 |---|---|---|
-| **Claude** | this directory, `protocol-crm/` | Two lines in Claude. See below. |
+| **Claude** | [`protocol-crm/`](./protocol-crm/) | Two lines in Claude. See below. |
 | **ChatGPT** | [`openai/`](./openai/) | Add a connector, then upload the skills. See [`openai/README.md`](./openai/README.md). |
 
 **About the name.** This repo is called `protocol-claude-plugin` because Claude was the first

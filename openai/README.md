@@ -32,10 +32,16 @@ There's no API key to copy for this, sign-in and approval are all it takes.
 This gives ChatGPT the coaching recipes: how to ground a program in a client's real profile, how
 assignment avoids overwriting your template, what a realistic portion size looks like.
 
-1. In ChatGPT, go to **Plugins**, then **Skills**.
-2. Choose **Create**, then **Upload from your computer**.
-3. Upload the nine skills from the `skills/` directory next to this file. ChatGPT scans each one
-   before making it available.
+1. Download
+   [`protocol-all-skills.zip`](https://github.com/dejankeri/protocol-claude-plugin/releases/latest/download/protocol-all-skills.zip).
+   If you would rather add them one at a time, each skill is a separate download on the
+   [releases page](https://github.com/dejankeri/protocol-claude-plugin/releases/latest).
+2. In ChatGPT, go to **Plugins**, then **Skills**.
+3. Choose **Create**, then **Upload from your computer**, and upload what you downloaded.
+   ChatGPT scans each skill before making it available.
+
+The readable source for all nine sits in the `skills/` directory next to this file, if you want
+to see exactly what you are giving ChatGPT before you upload it. The downloads are built from it.
 
 Upload `protocol-reference` first if the interface lets you choose an order. Every other skill
 defers to it for exact parameter names, and a wrong parameter name loses data silently.

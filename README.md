@@ -97,8 +97,12 @@ Not yet listed in OpenAI's plugin directory, so for now it takes two steps rathe
 
 1. **Connect Protocol.** In ChatGPT, open Settings, then Connectors, turn on Developer mode, and
    add a custom connector pointing at `https://api.protocolcrm.com/mcp`. Sign in and approve.
-2. **Add the skills.** Go to Plugins, then Skills, then Create, then Upload, and upload the nine
-   skills from [`openai/skills/`](./openai/skills/).
+2. **Add the skills.** Download
+   [`protocol-all-skills.zip`](https://github.com/dejankeri/protocol-claude-plugin/releases/latest/download/protocol-all-skills.zip),
+   then in ChatGPT go to Plugins, then Skills, then Create, then Upload from your computer.
+   Individual skills are on the [releases page](https://github.com/dejankeri/protocol-claude-plugin/releases/latest)
+   if you would rather add them one at a time, and the readable source is in
+   [`openai/skills/`](./openai/skills/).
 
 Step 1 alone gives ChatGPT the Protocol actions. Step 2 is what gives it the coaching recipes
 that make those actions produce work a coach would actually send a client.

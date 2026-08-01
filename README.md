@@ -1,7 +1,24 @@
-# Protocol CRM for Claude
+# Protocol CRM for your AI assistant
 
-Run your Protocol CRM from inside Claude: review a client, build a program or nutrition plan,
-manage scheduling, and clear your inbox, all in plain conversation.
+Run your Protocol CRM from inside your AI assistant: review a client, build a program or
+nutrition plan, manage scheduling, and clear your inbox, all in plain conversation.
+
+This repository holds two packs, one per assistant. Both connect to the same Protocol server and
+carry the same nine coaching skills, so the assistant behaves the same way whichever one you use.
+
+| Assistant | Where | How you install it |
+|---|---|---|
+| **Claude** | this directory, `protocol-crm/` | Two lines in Claude. See below. |
+| **ChatGPT** | [`openai/`](./openai/) | Add a connector, then upload the skills. See [`openai/README.md`](./openai/README.md). |
+
+**About the name.** This repo is called `protocol-claude-plugin` because Claude was the first
+assistant it supported. It is no longer Claude-only. The name stays for now so that the install
+line coaches already have keeps working, and renaming it would break that line for everyone who
+has it saved.
+
+---
+
+# Claude
 
 ## Install
 
@@ -46,14 +63,6 @@ To turn it on:
 
 Takes about ten seconds, and you only do it once.
 
-## What it does day to day
-
-- Review a client, catch up before a session, or run a weekly check-in
-- Onboard a new client and fill in their intake
-- Build and assign training programs, workouts, and nutrition plans
-- Manage your schedule and appointments
-- Triage your inbox and tasks
-
 ## Optional: direct API access (Claude Code only)
 
 Most coaches never need this. It's for two things: pulling a lot of data at once, for example
@@ -74,11 +83,51 @@ Two things to know before you set this up:
 
 - This key is **full access to your account**, the same as logging in yourself. It is not
   limited the way the normal connection above is. Treat it like a password.
-- It only works in **Claude Code**, the terminal app. Claude Desktop and the Claude web app
-  have no terminal to run it from, so this option isn't available there.
+- It only works in a terminal, so **Claude Code** rather than Claude Desktop or the Claude web
+  app, which have no shell to run it from.
 
 If you're not sure you need this, you probably don't. The normal connection covers everyday
 coaching work on its own.
+
+---
+
+# ChatGPT
+
+Not yet listed in OpenAI's plugin directory, so for now it takes two steps rather than one line.
+
+1. **Connect Protocol.** In ChatGPT, open Settings, then Connectors, turn on Developer mode, and
+   add a custom connector pointing at `https://api.protocolcrm.com/mcp`. Sign in and approve.
+2. **Add the skills.** Go to Plugins, then Skills, then Create, then Upload, and upload the nine
+   skills from [`openai/skills/`](./openai/skills/).
+
+Step 1 alone gives ChatGPT the Protocol actions. Step 2 is what gives it the coaching recipes
+that make those actions produce work a coach would actually send a client.
+
+Full instructions, including the access levels, are in [`openai/README.md`](./openai/README.md).
+
+---
+
+# True on every assistant
+
+## What it does day to day
+
+- Review a client, catch up before a session, or run a weekly check-in
+- Onboard a new client and fill in their intake
+- Build and assign training programs, workouts, and nutrition plans
+- Manage your schedule and appointments
+- Triage your inbox and tasks
+
+## The access level is the real control
+
+Whichever assistant you use, what it can do to your account is decided by the access level you
+pick when you sign in, not by anything in this repo. Read and write is the default. Send is
+opt-in and covers only the three actions above that reach a client directly.
+
+At the read level, the write actions are not refused, they are simply absent from the
+assistant's list of what it can do. If you ask for a program build on a read-only connection, the
+assistant will tell you it can't, which reads like a missing feature and is not one. Reconnect at
+a higher access level. Never work around it with a Protocol API key: a key carries no access
+level at all, it is full account access, and using one defeats the only control you actually set.
 
 ## What it will not do without asking you
 
@@ -95,5 +144,7 @@ coaching work on its own.
 
 ---
 
-**Where the skills live.** The skills themselves are authored once in `packs/skills/` and shared
-with a second, OpenAI-facing pack. This directory holds only the Claude manifests that wrap them.
+**For maintainers.** The nine skills are authored once in the monorepo and shared by both packs,
+so `protocol-crm/skills/` and `openai/skills/` are two renderings of one source. Edit them in the
+monorepo at `packs/skills/`, never here: this repository is a published mirror and is overwritten
+on every publish.

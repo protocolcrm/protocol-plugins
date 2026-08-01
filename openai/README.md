@@ -13,16 +13,38 @@ manage scheduling, and clear your inbox, all in plain conversation.
 
 ## Connecting today
 
-This pack is not yet listed in OpenAI's plugin directory, so for now you connect it by hand as a
-custom connector, the same MCP server the Claude plugin uses:
+This pack is not yet listed in OpenAI's plugin directory, so setting it up takes two steps rather
+than one line. They do different jobs, and you want both.
+
+### Step 1: connect Protocol
+
+This gives ChatGPT the Protocol actions themselves, the same MCP server the Claude plugin uses.
 
 1. In ChatGPT, open **Settings**, then **Connectors**, and turn on **Developer mode**.
 2. Choose **Add custom connector**.
 3. For the server URL, paste `https://api.protocolcrm.com/mcp`.
 4. Sign in to Protocol when prompted and approve the connection.
 
-Once that's done, ChatGPT can call your Protocol skills the same way the plugin will once it's
-listed. There's no API key to copy for this, sign-in and approval are all it takes.
+There's no API key to copy for this, sign-in and approval are all it takes.
+
+### Step 2: add the skills
+
+This gives ChatGPT the coaching recipes: how to ground a program in a client's real profile, how
+assignment avoids overwriting your template, what a realistic portion size looks like.
+
+1. In ChatGPT, go to **Plugins**, then **Skills**.
+2. Choose **Create**, then **Upload from your computer**.
+3. Upload the nine skills from the `skills/` directory next to this file. ChatGPT scans each one
+   before making it available.
+
+Upload `protocol-reference` first if the interface lets you choose an order. Every other skill
+defers to it for exact parameter names, and a wrong parameter name loses data silently.
+
+**Step 1 without step 2 still works**, and this is worth understanding rather than skipping.
+ChatGPT will be able to reach your account and call every action it has access to. What it will
+not have is the accumulated knowledge of how a coach uses them, so it will reason from scratch
+each time instead of from a tested recipe. Expect more round trips and more of your own
+correction.
 
 ## The consent screen and access levels
 

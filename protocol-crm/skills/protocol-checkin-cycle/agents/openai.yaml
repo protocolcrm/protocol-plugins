@@ -1,0 +1,9 @@
+display_name: "Protocol check-in cycle"
+description: "Use when the operator wants to run weekly check-ins, review progress entries, log a client's numbers, or write up a meeting note in Protocol - so the review reflects the trend rather than a single week's noise."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

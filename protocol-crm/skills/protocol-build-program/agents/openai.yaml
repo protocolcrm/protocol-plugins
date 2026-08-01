@@ -1,0 +1,9 @@
+display_name: "Protocol build program"
+description: "Use when the operator asks you to build, edit, or assign a training program or workout in Protocol - so the block is grounded in the client's real profile and assignment does not overwrite a template."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

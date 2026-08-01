@@ -1,0 +1,9 @@
+display_name: "Protocol nutrition"
+description: "Use when the operator asks you to build or adjust a client's nutrition plan, hit a calorie or macro target, add a recipe, or fix a meal in Protocol - so the plan matches how this coach actually feeds their clients."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

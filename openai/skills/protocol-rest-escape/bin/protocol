@@ -1,0 +1,180 @@
+#!/usr/bin/env node
+'use strict'
+// Protocol CRM REST CLI - a thin wrapper for calling the live REST API directly.
+//
+// Auth: reads PROTOCOL_API_KEY + PROTOCOL_API_URL from the environment. The key is a
+// `pk_live_` API access key that authenticates AS the coach with FULL permissions on every
+// route - treat it like the coach's own login session.
+//
+// No build, no dependencies: uses only Node built-in globals (fetch, process, console) so it
+// runs directly (extensionless, Node CommonJS) with `./protocol ...` or `node protocol ...`.
+//
+// Usage:
+//   protocol <METHOD> <path> [--data '<json>'] [--query k=v ...] [--confirm]
+//   protocol whoami                         # connectivity check -> GET /v1/users/me
+//
+// GET/HEAD/OPTIONS run freely. Any mutating method (POST/PUT/PATCH/DELETE) REQUIRES --confirm:
+// without it the CLI prints a one-line summary of the intended request and refuses (non-zero).
+//
+// IMPORTANT: --confirm is HELPFUL FRICTION, not a security boundary. Whoever holds the raw key
+// could bypass this wrapper entirely (curl, fetch, another client). It exists to force a
+// deliberate pause before a live, coach-visible write. The real safety envelope is the advisory
+// guardrails documented in this skill's SKILL.md and in the reference hub's guardrails.md -
+// follow them.
+
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+const DEFAULT_BASE = 'https://api.protocolcrm.com'
+
+function die(msg, code) {
+  process.stderr.write(String(msg) + '\n')
+  process.exit(code == null ? 1 : code)
+}
+
+const USAGE = [
+  'Usage:',
+  "  protocol <METHOD> <path> [--data '<json>'] [--query k=v ...] [--confirm]",
+  '  protocol whoami',
+  '',
+  'Examples:',
+  '  protocol whoami',
+  '  protocol GET /v1/users --query role=CLIENT --query page=1',
+  '  protocol GET /v1/users/123',
+  '  protocol GET /v1/programs',
+  "  protocol PUT /v1/users/123 --data '{\"firstName\":\"Sam\"}' --confirm",
+].join('\n')
+
+function parseArgs(argv) {
+  const args = { method: null, path: null, data: null, query: [], confirm: false }
+  const positional = []
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a === '--confirm') {
+      args.confirm = true
+    } else if (a === '--data' || a === '-d') {
+      args.data = argv[++i]
+      if (args.data == null) throw new Error('--data requires a JSON string argument')
+    } else if (a === '--query' || a === '-q') {
+      const kv = argv[++i]
+      if (kv == null || kv.indexOf('=') === -1) throw new Error('--query requires a k=v argument')
+      args.query.push(kv)
+    } else if (a === '-h' || a === '--help') {
+      throw new Error('__help__')
+    } else if (a.startsWith('-')) {
+      throw new Error('unknown flag: ' + a)
+    } else {
+      positional.push(a)
+    }
+  }
+
+  // Convenience subcommand: `protocol whoami` → GET /v1/users/me
+  if (positional.length === 1 && positional[0].toLowerCase() === 'whoami') {
+    args.method = 'GET'
+    args.path = '/v1/users/me'
+    return args
+  }
+
+  if (positional.length < 2) throw new Error('expected <METHOD> <path>')
+  args.method = positional[0].toUpperCase()
+  args.path = positional[1]
+  return args
+}
+
+function buildUrl(base, path, query) {
+  const trimmedBase = base.replace(/\/+$/, '')
+  const cleanPath = path.startsWith('/') ? path : '/' + path
+  let url
+  try {
+    url = new URL(trimmedBase + cleanPath)
+  } catch {
+    // A malformed PROTOCOL_API_URL would otherwise throw a raw TypeError with a stack trace.
+    die('PROTOCOL_API_URL is not a valid URL: ' + base + '\nExpected something like https://api.protocolcrm.com')
+  }
+  for (const kv of query) {
+    const idx = kv.indexOf('=')
+    url.searchParams.append(kv.slice(0, idx), kv.slice(idx + 1))
+  }
+  return url
+}
+
+async function main() {
+  let args
+  try {
+    args = parseArgs(process.argv.slice(2))
+  } catch (e) {
+    if (e && e.message === '__help__') {
+      process.stdout.write(USAGE + '\n')
+      process.exit(0)
+    }
+    die(e.message + '\n\n' + USAGE)
+  }
+
+  const key = process.env.PROTOCOL_API_KEY
+  if (!key) {
+    die(
+      'PROTOCOL_API_KEY is not set.\n' +
+      'Get a pk_live_ API access key from Protocol: Integrations, API keys - then set it as\n' +
+      'PROTOCOL_API_KEY in your environment before running this command. Note: this is NOT\n' +
+      'the tiered pk_ agent key from the AI Agent page; that key will not authenticate here.\n' +
+      'Integrations is owner-only - if the coach you are working with is not the account\n' +
+      'owner, they will not see that menu; they need to ask the owner for a key instead.',
+    )
+  }
+  const base = process.env.PROTOCOL_API_URL || DEFAULT_BASE
+
+  if (!READ_METHODS.has(args.method) && !MUTATING_METHODS.has(args.method)) {
+    die('unsupported method: ' + args.method)
+  }
+
+  const url = buildUrl(base, args.path, args.query)
+
+  // Helpful friction: a mutating request without --confirm is described, then refused.
+  if (MUTATING_METHODS.has(args.method) && !args.confirm) {
+    // Never echo the body: it routinely carries client PII, and this path sends nothing.
+    const dataNote = args.data ? ' with a ' + args.data.length + '-byte JSON body' : ''
+    die(
+      'Refusing ' + args.method + ' ' + url.pathname + url.search + dataNote + '\n' +
+      'This is a live, coach-visible write. Re-run with --confirm once you have coach approval.',
+    )
+  }
+
+  let body
+  const headers = { Authorization: 'Bearer ' + key, Accept: 'application/json' }
+  if (args.data != null) {
+    try {
+      JSON.parse(args.data) // validate before sending
+    } catch (e) {
+      die('--data is not valid JSON: ' + e.message)
+    }
+    body = args.data
+    headers['Content-Type'] = 'application/json'
+  }
+
+  let res
+  try {
+    res = await fetch(url, { method: args.method, headers, body })
+  } catch (e) {
+    // fetch() hides the real reason in e.cause; without it every failure reads "fetch failed".
+    const why = e && e.cause && e.cause.message ? e.cause.message : null
+    const msg = e && e.message ? e.message : String(e)
+    die('request failed: ' + msg + (why ? ' (' + why + ')' : ''))
+  }
+
+  const text = await res.text()
+  let pretty = text
+  try {
+    pretty = JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    // non-JSON body, print as-is
+  }
+
+  if (!res.ok) {
+    process.stderr.write('HTTP ' + res.status + ' ' + res.statusText + '\n')
+    if (pretty) process.stderr.write(pretty + '\n')
+    process.exit(1)
+  }
+
+  if (pretty) process.stdout.write(pretty + '\n')
+}
+
+main()

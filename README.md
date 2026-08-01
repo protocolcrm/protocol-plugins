@@ -92,3 +92,8 @@ coaching work on its own.
 ## Learn more
 
 [https://help.protocolcrm.com/ai-agent-claude-plugin](https://help.protocolcrm.com/ai-agent-claude-plugin)
+
+---
+
+**Where the skills live.** The skills themselves are authored once in `packs/skills/` and shared
+with a second, OpenAI-facing pack. This directory holds only the Claude manifests that wrap them.

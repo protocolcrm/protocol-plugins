@@ -1,0 +1,9 @@
+display_name: "Protocol scheduling"
+description: "Use when the operator wants to book, move, or cancel an appointment, set up check-in reminders, or configure booking in Protocol - so routine calendar work runs freely while anything that pings a real client waits for a human tap."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

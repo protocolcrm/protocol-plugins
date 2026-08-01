@@ -1,0 +1,9 @@
+display_name: "Protocol inbox triage"
+description: "Use when the operator asks what needs their attention, wants their Protocol inbox cleared, or asks about tasks and boards - so they get a short list of real decisions instead of an undifferentiated pile."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

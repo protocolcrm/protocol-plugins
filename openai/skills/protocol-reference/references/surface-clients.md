@@ -118,10 +118,10 @@ No schema-level required params, but you must pass either `clientId` **or** `cre
 | `lifecycleStageId` | string \| null | Move **this client** to a stage; `null` clears it. |
 | `assignTrainerId` | string | Assign this trainer. The response's `assignment` object carries the assignment `id`. |
 | `unassignAssignmentId` | string | Remove an assignment **by assignment id** (not trainer id). |
-| `healthProfile` | object | Partial patch. |
-| `fitnessProfile` | object | Partial patch. |
-| `nutritionProfile` | object | Partial patch. |
-| `behavioralProfile` | object | Partial patch. |
+| `healthProfile` | object | Partial patch: `dateOfBirth` (YYYY-MM-DD), `gender`, `heightCm`, `allergies`, `previousInjuries`, `riskAssessment`, `notes`, `coachNotes`, the three `clientDenies*` flags. No weight, body fat or age (see below). |
+| `fitnessProfile` | object | Partial patch: `experienceLevel`, `primaryGoals`, `preferredTrainingStyles`, `availableDays`, `maxSessionsPerWeek`, `sessionDurationPreferenceMinutes`, `equipmentAccessLevel`, `notes`, `coachNotes`. |
+| `nutritionProfile` | object | Partial patch: `primaryDietType`, `nutritionGoals`, `preferredMealFrequency`, `foodPreferences`, `cuisinePreferences`, `dietaryRestrictions`, `previousDietSuccess`, `dietChallenges`, `nutritionRelatedHealthConcerns`, `notes`, `coachNotes`. |
+| `behavioralProfile` | object | Partial patch: `motivationFactors`, `adherenceRate` (1-5), `consistencyScore` (1-5), the `preferredCommunication*` fields, `preferredFeedbackStyles`, `responsesToChallenges`, `behavioralTriggers`, `notes`, `coachNotes`. |
 | `lifecycleStage` | object | Manages the tenant's **stage list itself**: `{ action: "create"\|"update"\|"reorder", ... }`. |
 | `addLabels` | string[] | Label **names** to attach. A name that does not exist yet is created, so there is no need to look one up first. |
 | `removeLabels` | string[] | Label **names** to detach. Unknown names are ignored. |
@@ -130,6 +130,14 @@ No schema-level required params, but you must pass either `clientId` **or** `cre
 tenant. They are not the same thing.
 
 **Labels are addressed by name here, never by id** — unlike almost everything else on this surface.
+**A profile key the profile does not have is refused, and the whole call changes nothing.** The
+error names each key and where it belongs. The usual one is a measurement: weight, body fat and
+girths are not profile fields, they are a dated check-in, `record_progress action=entry` with
+`measurements {"weightKg":84,"bodyFatPercentage":16}`, which is what the charts and reports read.
+Age is not stored either; set `healthProfile.dateOfBirth`, and ask the coach for it when you only
+know the age. Never fall back to writing these into `notes` or `coachNotes`. The response carries
+the client with all four profiles, so you can check what landed.
+
 `addLabels` creates on demand, which is convenient and also means a typo silently becomes a new
 label rather than failing. Enumerate the existing vocabulary with `find kind=client_label` before
 inventing a name, and filter clients by label with `find kind=client labelNames=[…]`.

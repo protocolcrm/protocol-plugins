@@ -22,7 +22,9 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
 2. Create the record with `manage_client` using its `create` object.
 3. Fill in whichever of the four profiles the operator gave you material for - health, fitness,
    nutrition, behavioural. These are separate sub-resources on the same call; see
-   `../protocol-reference/references/data-model.md`.
+   `../protocol-reference/references/data-model.md`. **Starting numbers are not profile fields:**
+   weight, body fat and girths go in as the client's first check-in (`record_progress
+   action=entry`, dated today), and age becomes `dateOfBirth` - ask for it if you only have the age.
 4. Set the lifecycle stage if the operator named one.
 5. Put them on a check-in. A client nobody measures cannot be coached from data later. Reuse the
    tenant's existing check-in form (`find` with `kind: "form"`) rather than making a new one -

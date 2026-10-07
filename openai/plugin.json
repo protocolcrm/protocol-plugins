@@ -8,7 +8,7 @@
     "url": "https://protocolcrm.com"
   },
   "homepage": "https://protocolcrm.com",
-  "repository": "https://github.com/dejankeri/protocol-claude-plugin",
+  "repository": "https://github.com/protocolcrm/protocol-plugins",
   "keywords": ["coaching", "fitness", "crm", "training programs", "nutrition", "scheduling"],
   "extensions": {
     "com.openai": {

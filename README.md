@@ -9,12 +9,11 @@ carry the same nine coaching skills, so the assistant behaves the same way which
 | Assistant | Where | How you install it |
 |---|---|---|
 | **Claude** | [`protocol-crm/`](./protocol-crm/) | Two lines in Claude. See below. |
-| **ChatGPT** | [`openai/`](./openai/) | Add a connector, then upload the skills. See [`openai/README.md`](./openai/README.md). |
+| **ChatGPT** | [`openai/`](./openai/) | In the ChatGPT desktop app: Plugins → Add → Add a marketplace → `protocolcrm/protocol-plugins`. See [`openai/README.md`](./openai/README.md). |
 
-**About the name.** This repo is called `protocol-claude-plugin` because Claude was the first
-assistant it supported. It is no longer Claude-only. The name stays for now so that the install
-line coaches already have keeps working, and renaming it would break that line for everyone who
-has it saved.
+**About the name.** This repo was `dejankeri/protocol-claude-plugin` until 2026-10-07, when it
+moved to `protocolcrm/protocol-plugins` because it is no longer Claude-only. GitHub redirects the
+old name, so an install line saved before the move keeps working.
 
 ---
 
@@ -25,7 +24,7 @@ has it saved.
 In Claude, type these two lines:
 
 ```
-/plugin marketplace add dejankeri/protocol-claude-plugin
+/plugin marketplace add protocolcrm/protocol-plugins
 /plugin install protocol-crm@protocol
 ```
 
@@ -98,9 +97,9 @@ Not yet listed in OpenAI's plugin directory, so for now it takes two steps rathe
 1. **Connect Protocol.** In ChatGPT, open Settings, then Connectors, turn on Developer mode, and
    add a custom connector pointing at `https://api.protocolcrm.com/mcp`. Sign in and approve.
 2. **Add the skills.** Download
-   [`protocol-all-skills.zip`](https://github.com/dejankeri/protocol-claude-plugin/releases/latest/download/protocol-all-skills.zip),
+   [`protocol-all-skills.zip`](https://github.com/protocolcrm/protocol-plugins/releases/latest/download/protocol-all-skills.zip),
    then in ChatGPT go to Plugins, then Skills, then Create, then Upload from your computer.
-   Individual skills are on the [releases page](https://github.com/dejankeri/protocol-claude-plugin/releases/latest)
+   Individual skills are on the [releases page](https://github.com/protocolcrm/protocol-plugins/releases/latest)
    if you would rather add them one at a time, and the readable source is in
    [`openai/skills/`](./openai/skills/).
 

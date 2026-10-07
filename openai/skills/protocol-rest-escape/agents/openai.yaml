@@ -1,9 +1,0 @@
-display_name: "Protocol REST escape"
-description: "Use when no MCP verb or find/get kind covers what the operator needs, or a real analysis would take dozens of MCP round trips - calls Protocol's live REST API directly with a full-access pk_live_ key, so know exactly what that buys and what it does not guard."
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "protocol"
-      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
-      transport: "streamable_http"
-      url: "https://api.protocolcrm.com/mcp"

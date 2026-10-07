@@ -1,0 +1,9 @@
+display_name: "Protocol reporting"
+description: "Use when the operator asks how a month went, which clients are progressing or stalling, whether their programming is advancing, what a client is eating or tracking, how engaged they are, or where their purchases stand - so the answer comes from aggregated history with its real coverage stated, and the things this data cannot support are named rather than guessed at."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "protocol"
+      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
+      transport: "streamable_http"
+      url: "https://api.protocolcrm.com/mcp"

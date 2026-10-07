@@ -32,8 +32,7 @@ notification to the client's phone. Know which is which before you call it.
    `../protocol-reference/references/guardrails.md`), and if this connection is at the default
    `write`, the call is refused outright with a `PermissionDeniedError`. That refusal is normal, not
    a bug - tell the operator plainly which access level is needed and stop. Do not treat it as a
-   missing feature, and do not fall back to `../protocol-rest-escape` to send it anyway; that key
-   has no tier check and would override the operator's own choice at consent.
+   missing feature, and do not look for another route to send it anyway; that would override the operator's own choice at consent.
 5. Confirm what changed.
 
 ## Rules

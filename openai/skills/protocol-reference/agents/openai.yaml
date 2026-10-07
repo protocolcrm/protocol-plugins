@@ -1,9 +1,0 @@
-display_name: "Protocol reference"
-description: "Use when you need Protocol's exact tool parameters, entity kinds, action enums, domain model, or safety rules - the other protocol-* skills all delegate here rather than restating the surface, and getting a parameter name wrong loses data silently."
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "protocol"
-      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
-      transport: "streamable_http"
-      url: "https://api.protocolcrm.com/mcp"

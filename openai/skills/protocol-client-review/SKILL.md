@@ -34,3 +34,10 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
 - `review_client` is read-only and runs autonomously. Prefer it over `find`+`get` chains.
 - Report gaps honestly: "no check-in logged since the 4th" is more useful than a confident summary
   built on stale data.
+- **Narrate the record, never a clinical verdict on it.** `review_client` hands you labs, body
+  metrics and health data; Protocol is a wellness and optimization platform and does not diagnose,
+  treat, cure or prevent any disease. Describe where a value sits and which way it is moving against
+  this client's own history, not whether it is abnormal, critical or out of range, and never name a
+  condition the data supposedly shows. If something could reasonably concern the client, say so and
+  point at their doctor. Full rule: `../protocol-reference/references/guardrails.md`, under House
+  style.

@@ -1,9 +1,0 @@
-display_name: "Protocol onboard client"
-description: "Use when the operator wants to add a new client to Protocol, fill in someone's intake details, or move a client to a different lifecycle stage - so the record is complete enough for programming instead of a bare name."
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "protocol"
-      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
-      transport: "streamable_http"
-      url: "https://api.protocolcrm.com/mcp"

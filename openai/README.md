@@ -11,51 +11,76 @@ manage scheduling, and clear your inbox, all in plain conversation.
 - Manage your schedule and appointments
 - Triage your inbox and tasks
 
-## Connecting today
+## What is in the plugin
 
-This pack is not yet listed in OpenAI's plugin directory, so setting it up takes two steps rather
-than one line. They do different jobs, and you want both.
+One package with two parts, and you want both:
 
-### Step 1: connect Protocol
+- **The Protocol connection** (an MCP server at `https://api.protocolcrm.com/mcp`). This is what
+  lets ChatGPT reach your account and take actions in it. You sign in to Protocol to connect it;
+  there is no API key to copy.
+- **Nine coaching skills.** These are the recipes: how to ground a program in a client's real
+  profile, how assignment avoids overwriting your template, what a realistic portion size looks
+  like. The readable source for all nine sits in the `skills/` directory next to this file.
 
-This gives ChatGPT the Protocol actions themselves, the same MCP server the Claude plugin uses.
+## Install it
 
-1. In ChatGPT, open **Settings**, then **Connectors**, and turn on **Developer mode**.
-2. Choose **Add custom connector**.
-3. For the server URL, paste `https://api.protocolcrm.com/mcp`.
-4. Sign in to Protocol when prompted and approve the connection.
+### Once Protocol is listed in the plugin directory
 
-There's no API key to copy for this, sign-in and approval are all it takes.
+1. In ChatGPT, open **Plugins** in the sidebar.
+2. Search for **Protocol CRM** and open it.
+3. Choose **Install**, then **Connect**.
+4. Sign in to Protocol when prompted.
+5. Pick an access level on Protocol's consent screen (see below) and approve.
 
-### Step 2: add the skills
+### Until then: upload the plugin file
 
-This gives ChatGPT the coaching recipes: how to ground a program in a client's real profile, how
-assignment avoids overwriting your template, what a realistic portion size looks like.
+Protocol is not in the directory yet, so early coaches install the same plugin from a file.
 
-1. Download
-   [`protocol-all-skills.zip`](https://github.com/dejankeri/protocol-claude-plugin/releases/latest/download/protocol-all-skills.zip).
-   If you would rather add them one at a time, each skill is a separate download on the
-   [releases page](https://github.com/dejankeri/protocol-claude-plugin/releases/latest).
-2. In ChatGPT, go to **Plugins**, then **Skills**.
-3. Choose **Create**, then **Upload from your computer**, and upload what you downloaded.
-   ChatGPT scans each skill before making it available.
+1. Download the Protocol plugin file (a `.zip`) from
+   [help.protocolcrm.com/ai-agent/chatgpt](https://help.protocolcrm.com/ai-agent/chatgpt). Keep it
+   zipped; do not unzip it.
+2. Go to [chatgpt.com/plugins](https://chatgpt.com/plugins).
+3. Choose **Add**, then **Upload plugin archive**, and pick the file you downloaded.
+4. Open the plugin and choose **Connect**.
+5. Sign in to Protocol when prompted.
+6. Pick an access level on Protocol's consent screen (see below) and approve.
 
-The readable source for all nine sits in the `skills/` directory next to this file, if you want
-to see exactly what you are giving ChatGPT before you upload it. The downloads are built from it.
+This installs the connection and all nine skills together. You do not need to upload skills
+separately.
 
-Upload `protocol-reference` first if the interface lets you choose an order. Every other skill
-defers to it for exact parameter names, and a wrong parameter name loses data silently.
+### Fallback: connect without the skills
 
-**Step 1 without step 2 still works**, and this is worth understanding rather than skipping.
-ChatGPT will be able to reach your account and call every action it has access to. What it will
-not have is the accumulated knowledge of how a coach uses them, so it will reason from scratch
-each time instead of from a tested recipe. Expect more round trips and more of your own
-correction.
+If **Upload plugin archive** is not offered on your account, you can still connect Protocol
+itself. You get every action your access level allows, but not the coaching skills, so ChatGPT
+reasons from scratch each time instead of from a tested recipe. Expect more round trips and more
+of your own correction.
+
+1. Go to [chatgpt.com/plugins](https://chatgpt.com/plugins).
+2. Choose **Add** (the **+** button), then **Add custom MCP server**.
+3. Give it a name, for example `Protocol`.
+4. For the server URL, paste `https://api.protocolcrm.com/mcp`.
+5. For authentication, choose **OAuth**. Leave the client ID and client secret blank; ChatGPT
+   registers itself with Protocol automatically.
+6. Read the warning, choose **I understand and want to continue**, then **Create as a plugin**.
+7. Sign in to Protocol when prompted and pick an access level.
+
+### Which ChatGPT plans can make changes
+
+This is OpenAI's side, not Protocol's, and it is still moving. As OpenAI documents it today,
+full MCP support including write actions (updating a client, building a program) is for
+**Business, Enterprise, and Edu** workspaces, and **Pro** can connect a custom MCP server for
+reading only. Whether a **Plus** account can run Protocol's write actions through an uploaded
+plugin has not been confirmed yet; we are testing it and will update this page. In a Business or
+Enterprise workspace, your admin may also need to allow uploading plugins or creating plugins
+with MCP servers.
+
+If ChatGPT can read your clients but tells you it cannot change anything, check the plan first,
+then the access level you picked on Protocol's consent screen.
 
 ## The consent screen and access levels
 
 When you approve the connection, Protocol shows you an access level to choose, and this choice
-is what actually gates what ChatGPT can do to your account, not anything in this pack.
+is what actually gates what ChatGPT can do to your account, not anything in this plugin.
 
 - **Read and write** is the default, and it's right for most coaches. It covers everything on
   the list above: reviewing clients, building and assigning programs, nutrition, scheduling,
@@ -66,7 +91,7 @@ is what actually gates what ChatGPT can do to your account, not anything in this
   demand. Pick this level only if you want the assistant able to trigger one of those three
   without you doing it yourself.
 
-## An absent verb is normal, not a bug
+## An absent action is normal, not a bug
 
 At the **read** access level, the write actions aren't refused, they're simply not in the tool
 list at all. If you ask the assistant to update a client or build a program while connected at
@@ -92,4 +117,4 @@ don't take it, reconnect at the level you actually need instead.
 
 ## Learn more
 
-[https://help.protocolcrm.com/ai-agent-claude-plugin](https://help.protocolcrm.com/ai-agent-claude-plugin)
+[https://help.protocolcrm.com/ai-agent/chatgpt](https://help.protocolcrm.com/ai-agent/chatgpt)

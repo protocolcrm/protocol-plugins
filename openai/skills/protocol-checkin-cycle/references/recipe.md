@@ -61,6 +61,10 @@ Verb + param source: **[surface-clients.md](../../protocol-reference/references/
   `clientFacingSummary` or `measurements`.
 - **Approval is the coach's call, not the agent's default.** Draft and refine freely with
   `reportAction=update`; never chain straight into `reportAction=approve` on your own initiative.
+- **`clientFacingSummary` is read by the client, so the claims rule binds it hardest.** Trends and
+  ranges against this person's own history, wellness framing, no "abnormal"/"out of range" verdict,
+  no named disease, and "worth raising with your doctor" wherever a result could concern them. See
+  "Claims and intended purpose" in `../../protocol-reference/references/guardrails.md`.
 
 ## See also
 

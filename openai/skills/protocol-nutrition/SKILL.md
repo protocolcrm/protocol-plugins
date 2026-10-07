@@ -79,6 +79,15 @@ then reference them by id. Full grammar: `../protocol-reference/references/surfa
   nearest 5-10. Landing at ~2950 kcal with tidy portions beats hitting 3000 exactly with strange
   fractions - artificial precision reads as machine-generated and coaches will not use it.
 - Never override a stated allergy or restriction to make a target work. Report the conflict instead.
+- **Supplements get structure/function wording, never a treatment claim.** A supplement row, and any
+  note you write beside one, says what it *supports* or *helps maintain*: "supports sleep quality",
+  "helps maintain normal magnesium levels". It never treats, prevents, cures or reduces the risk of
+  a named condition. "Magnesium supports sleep quality" is fine; "magnesium treats insomnia" or
+  "vitamin D prevents osteoporosis" is not, and neither is a dose framed as therapy for something.
+  The same holds for the food plan itself: a plan is aimed at how the client performs, recovers and
+  feels, never at a disease. Protocol does not diagnose, treat, cure or prevent any disease, and
+  nothing you write into a plan may imply it does. Full rule:
+  `../protocol-reference/references/guardrails.md`, under House style.
 - `items` replaces the item tree. Read, merge, write the whole thing - every row needs one control
   key (`add` / `ref` / `modify`), and a row you omit is deleted. Keep untouched rows with
   `{ ref: "<id>" }`.

@@ -54,6 +54,14 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
   the most common way to make coaching worse.
 - Write notes the way a coach would - specific and human. Never produce a template with the numbers
   swapped in.
+- **A check-in reply is wellness writing, not clinical writing.** Protocol does not diagnose, treat,
+  cure or prevent any disease, and nothing you write into a note, a `clientFacingSummary` or a
+  report section may imply that it does. Talk about how the client is performing, recovering,
+  sleeping and feeling. Read their numbers as a trend against their own history, never as abnormal,
+  critical or out of range against a clinical threshold, and never name a condition the numbers
+  supposedly show. If something in a check-in could reasonably concern them, say it plainly and
+  suggest they raise it with their doctor - neither reassure nor alarm. Full rule:
+  `../protocol-reference/references/guardrails.md`, under House style.
 - Logging a check-in or a note is a write, and reaches nobody.
 - **Approving a report is different: it publishes to the client, immediately, with no platform
   gate.** `reportAction=approve` is a plain write that Protocol applies the moment you call it -

@@ -131,6 +131,27 @@ surface to lean on:
 Every one of these routes is reachable with this key. Nothing rejects the call. The wall is you
 choosing not to make it without the coach saying yes first.
 
+## The claims rule binds here too, and nothing restates it for you
+
+An MCP connection gets Protocol's own connection-time instructions with every call, and the claims
+rule rides along in them. **This key gets none of that.** You are writing straight into the coach's
+account with no server-side instruction reminding you how the output has to read, which makes this
+the easiest place in the whole surface to write a sentence that costs Protocol its regulatory
+standing.
+
+Protocol is a wellness and optimization platform. It does not diagnose, treat, cure or prevent any
+disease, and nothing you write through this key may imply that it does.
+
+- Never call a value abnormal, critical, or out of range against a clinical threshold, and never
+  render a verdict on it. Trends and ranges against this person's own history, nothing more.
+- Never name a disease as something the data shows, rules out or predicts.
+- Supplements: "supports", "helps maintain". Never treats, prevents or cures a named condition.
+- Where a result could reasonably concern someone, say so plainly and point at their doctor.
+
+This applies to raw REST payloads exactly as it applies to a report you draft through MCP. Full rule:
+[`../protocol-reference/references/guardrails.md`](../protocol-reference/references/guardrails.md),
+under House style.
+
 ## Never mint an API key from here
 
 `POST /v1/api-keys` returns the **raw `pk_live_` key in its response body**, and that is the only

@@ -1,9 +1,0 @@
-display_name: "Protocol client review"
-description: "Use when the operator asks how a client is doing, wants a catch-up before a session, or asks anything that needs a client's current state - so the answer comes from Protocol's live record instead of memory or guesswork."
-dependencies:
-  tools:
-    - type: "mcp"
-      value: "protocol"
-      description: "Protocol CRM: clients, programs, nutrition, scheduling, inbox."
-      transport: "streamable_http"
-      url: "https://api.protocolcrm.com/mcp"

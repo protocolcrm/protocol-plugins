@@ -144,6 +144,42 @@ Workouts and nutrition templates have no separate assign verb: they are created 
 (client-owned) or omitted (library template), and `isTemplate` marks the library form.
 `build_program.importWorkoutId` imports a workout into the library.
 
+## The library has two shelves
+
+Every library row carries an **owner** and a **visibility** (`PRIVATE` / `TEAM`). A solo coach,
+an owner and an admin all write as the company, so their rows belong to the tenant owner; only a
+coach with scoped team access owns rows under their own id.
+
+`find scope=mine|team|all` asks the question and every row comes back carrying its `visibility`.
+Tell the coach whose work you used — building a plan out of a colleague's shelf without saying so
+is the kind of thing they notice afterwards. Do not compose the filter yourself out of an owner
+and a visibility: half of "mine" is a *different* question, not a narrower one.
+
+## A program owns everything inside it
+
+A workout or nutrition template referenced by a program's `phases` must be that program's own.
+Concretely, on every write the server checks each referenced row and **copies any that fails**,
+repointing the day at the copy:
+
+- it must not be a **library template** (`isTemplate = true`) — editing a library row would
+  rewrite the live plan of every client following it;
+- it must belong to the **same client** and the **same tenant** as the program;
+- it must not already belong to **another program** — each row carries a `program_id`
+  back-reference, and two programs on one row means editing one silently rewrites the other;
+- and no workout may appear **twice in the same program**, template programs included. Workout
+  completion is keyed on the workout row alone, so a shared row makes week 4 tick when week 1 is
+  trained.
+
+You do not have to do any of this yourself, and you cannot opt out of it: place the id you mean
+and the server hands the program its own copy. What it means for you is that **the id you sent is
+often not the id that ends up on the day** — re-read the program after a phases write rather than
+assuming your ids survived. Nutrition templates are deliberately allowed to repeat across weeks
+(nothing keys completion to them), so one meal plan on four weeks stays one row.
+
+Existing references that were already wrong are left alone on an ordinary save, on purpose: many
+carry completion history, and copying them during an unrelated edit would detach a client's earned
+ticks. Repairing those is a deliberate, dry-runnable operation a human runs.
+
 ## Other entities you will touch
 
 | Entity | Shape notes |

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "protocol-crm",
+  "version": "0.1.0",
+  "description": "Operate your Protocol CRM by conversation: clients, programs, nutrition, check-ins, scheduling, and inbox triage.",
+  "author": {
+    "name": "Protocol",
+    "url": "https://protocolcrm.com"
+  },
+  "homepage": "https://protocolcrm.com",
+  "repository": "https://github.com/dejankeri/protocol-claude-plugin",
+  "keywords": ["coaching", "fitness", "crm", "training programs", "nutrition", "scheduling"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Protocol CRM",
+        "shortDescription": "Run your coaching CRM by chat",
+        "longDescription": "Protocol CRM lets coaches who use Protocol run their account by conversation. Review a client before a session, run a weekly check-in, onboard a new client, build and assign training programs and nutrition plans, manage appointments, and triage your inbox and tasks.\n\nYou need an existing Protocol coach account. When you connect, you sign in to Protocol and choose an access level: read only, read and write (the default), or send, which also allows the three actions that reach a client directly: sending an appointment reminder now, arming a recurring reminder, and running an automation on demand.\n\nIt does not message your clients for you, touch billing, permanently delete records, or start Protocol's own AI generation. When a client should hear from you, it drafts the message and you send it. Protocol is a coaching and wellness tool, not a medical one.",
+        "developerName": "Protocol",
+        "category": "Business & Operations",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://protocolcrm.com",
+        "supportURL": "https://help.protocolcrm.com/ai-agent/chatgpt",
+        "privacyPolicyURL": "https://protocolcrm.com/privacy-policy.html",
+        "termsOfServiceURL": "https://protocolcrm.com/terms-and-conditions.html",
+        "defaultPrompt": [
+          "What needs my attention today?",
+          "How is my newest client doing this week?",
+          "Build a 4-week upper/lower training block for one of my clients."
+        ],
+        "brandColor": "#08468E",
+        "composerIcon": "./assets/composer-icon.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}

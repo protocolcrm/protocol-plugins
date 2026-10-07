@@ -4,14 +4,14 @@ The client record, their check-ins and reports, and the forms that feed both. As
 `surface-core.md`.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 19 verbs:
+> rather than all 22 verbs:
 >
 > | File | Verbs |
 > |---|---|
-> | `surface-core.md` | `find` · `get` · the kind table · the replace grammar · `report_to_developers` |
+> | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
 
 
 ---
@@ -146,8 +146,9 @@ Required: `action`. 2 actions.
 | `formId` | string | Required for `update`. |
 | `title` | string | |
 | `description` | string | |
-| `presentationType` | string | `SINGLE_PAGE` · `MULTI_PAGE` · `HABIT_TRACKING` · `PROGRESS_TRACKING` — **not** schema-validated; a bad value passes straight through. |
+| `presentationType` | string | `SINGLE_PAGE` · `MULTI_PAGE` · `HABIT_TRACKING` · `PROGRESS_TRACKING` · `INTAKE` — **not** schema-validated; a bad value passes straight through. |
 | `questions` | object[] | **Replaces the whole question array.** `get` the form first. See *Question rows* below. |
+| `sections` | object[] | `INTAKE` only. Ordered `[{ id, title, role, description? }]`; `role` is one of `ABOUT_YOU` · `GOALS` · `HEALTH` · `BODY_METRICS` · `PHOTOS` · `TRAINING_HISTORY` · `CONSENT` · `NUTRITION` · `AVAILABILITY` · `INJURIES` · `CUSTOM`. Every question of an intake form carries the `sectionId` of its section. |
 | `theme` | object | |
 | `settings` | object | |
 
@@ -170,11 +171,13 @@ Row fields: `id` · `type` · `title` · `description` · `placeholder` · `requ
 `short_text` · `long_text` · `legal` · `rating` · `upload_media` · `end_screen`. **There is no
 `number` type** - a numeric field is `short_text` with `purpose: "number"`.
 
-**Two families, two row shapes.** Questionnaires (`SINGLE_PAGE`, `MULTI_PAGE`) take full rows and
+**Three families, two row shapes.** Questionnaires (`SINGLE_PAGE`, `MULTI_PAGE`) take full rows and
 get welcome/end screens added automatically. Trackers (`PROGRESS_TRACKING` for weekly measurement
 check-ins, `HABIT_TRACKING` for daily habits) take minimal rows - often just `{ mapTo, pinned }`,
-no type or title - and get no bookends. Real accounts use both shapes; read the form you are
-editing before assuming which.
+no type or title - and get no bookends. The intake questionnaire (`INTAKE`, the onboarding form a
+new client is sent) takes full rows grouped by `sections`, gets no bookends (the app steps through
+its sections), and its purpose is always `INITIAL_QUESTIONNAIRE` whatever `settings` say. Real
+accounts use all of these; read the form you are editing before assuming which.
 
 **Keep each surviving question's `id`.** Submitted answers are stored against it, so replacing the
 array with fresh ids orphans every past answer and loses that question's history.

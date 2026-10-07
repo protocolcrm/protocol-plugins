@@ -19,8 +19,7 @@ Four actions are off-limits **without the coach's explicit approval**:
 This is the part that matters. The MCP verb surface happens to be narrower than the platform: it
 exposes no send-message verb, no billing verb, no delete verb, no generate verb, at any tier. **Do
 not mistake that for enforcement of the four walls themselves** - there is no wall-shaped tool to
-gate in the first place, so a tier system has nothing to hold back here. Whether you are operating
-through this connection's chosen tier or a REST key (see `protocol-rest-escape`), the platform will
+gate in the first place, so a tier system has nothing to hold back here. Whether you are operating through this connection's chosen tier or any other route, the platform will
 not stop you from messaging a client, issuing a refund, hard-deleting a record, or triggering
 generation, because **specifically for these four things** there is no route at any tier that a
 scope check could intercept, unlike `schedule action=send_reminder`, `schedule action=reminder`,
@@ -53,7 +52,7 @@ the coach's own choice at that screen counts. The dropdown defaults to `write`. 
 | Tier | Rank | Can call |
 |---|---|---|
 | `read` | 0 | `find` · `get` · `review_client` · `message`, never mutates anything. |
-| `write` | 1 | The above **plus** `manage_client` · `build_program` · `assign_program` · `build_workout` · `build_nutrition` · `record_progress` · `manage_library` · `manage_forms` · `manage_tasks` · `manage_media` · `manage_support` · `review_inbox` · `report_to_developers` · `schedule` · `manage_automations`. |
+| `write` | 1 | The above **plus** `manage_client` · `build_program` · `assign_program` · `build_workout` · `build_nutrition` · `record_progress` · `manage_library` · `manage_forms` · `manage_tasks` · `manage_media` · `manage_content` · `manage_support` · `review_inbox` · `report_to_developers` · `schedule` · `manage_automations`. |
 | `send` | 2 | Everything above, **plus** three specific actions held back from `write`: `schedule action=send_reminder`, `schedule action=reminder`, and `manage_automations action=run`. |
 
 **`schedule` and `manage_automations` themselves sit at `write`.** Booking, moving, or cancelling an
@@ -106,8 +105,7 @@ Either way:
   exists; the tier system is working exactly as designed - there is nothing here for the product
   team to fix. At `read` tier, `report_to_developers` is itself absent from your tool list, so this
   escalation path is not even reachable there. That is expected too, not a bug.
-- **Do NOT reach for `protocol-rest-escape` to route around either one.** A `pk_live_` key has no
-  tier at all (see that skill). Falling back to it because a verb is refused or absent defeats the
+- **Do NOT reach for a direct Protocol API key to route around either one.** A `pk_live_` key has no tier at all. Falling back to it because a verb is refused or absent defeats the
   one real access control the coach set at consent - it is the single worst response to either
   outcome, especially at `read`, where the coach explicitly chose to keep you out of writes.
 
@@ -204,6 +202,33 @@ slightly off the target with clean numbers than to hit it exactly with awkward f
 Small deviations from a target are expected and fine. **Artificial precision is a tell and looks
 fake.** A plan that hits 2,980 kcal with clean portions is better work than one that hits 3,000 on
 the nose with 1.37 scoops and 143.2 g of rice.
+
+### Claims and intended purpose
+
+This one is a **compliance rule, not a style preference.** Protocol is a wellness and optimization
+platform: it does not diagnose, treat, cure or prevent any disease. That status rests on what is
+*said*, not on the technology, and you generate outbound text at scale — so the wording you choose
+is the thing being judged.
+
+**Always:**
+
+- Wellness and optimization framing: perform, recover, sleep, energy, healthy aging.
+- Labs and biomarkers as **trends and ranges** relative to the person's own history.
+- "Discuss this with your doctor" wherever a result could reasonably worry someone.
+- Supplements in structure/function wording: `supports`, `helps maintain`.
+
+**Never:**
+
+| Never write | Write instead |
+|---|---|
+| `catch cancer early`, `detects diabetes` | `supports healthy aging`, `helps you track how this trends` |
+| `your ApoB is abnormal` | `your ApoB sits above the optimal range and has been rising` |
+| `take X to treat your hypothyroidism` | `X supports normal thyroid function; discuss it with your doctor` |
+| `this will lower your ApoB by 30%` | `people often see this trend improve; yours is what we will watch` |
+
+Never position what you write as a clinical decision, a prescription, or a substitute for a
+clinician. If a coach asks for text that crosses the line, say plainly why you are phrasing it the
+wellness way instead — that is a better answer than quietly writing the claim.
 
 ### Mirror the coach
 

@@ -1,17 +1,17 @@
 # Protocol MCP surface - running the practice
 
-The calendar, the kanban, the media library, the inbox, and automations - the operational half
-that is not about one client's programming. Assumes `surface-core.md`.
+The calendar, the kanban, the media library, articles, the inbox, and automations - the operational
+half that is not about one client's programming. Assumes `surface-core.md`.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 19 verbs:
+> rather than all 22 verbs:
 >
 > | File | Verbs |
 > |---|---|
-> | `surface-core.md` | `find` · `get` · the kind table · the replace grammar · `report_to_developers` |
+> | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
 
 
 ---
@@ -108,6 +108,64 @@ all its existing ids plus the new one - otherwise you quietly unfile it from the
 
 ---
 
+### `manage_content`
+
+Required: `action`. 6 actions. Articles are the coach's rich content pieces - a title, category,
+cover, and a block body - that clients read in the app's Learn tab and inside programs. You write
+and read the body as **Markdown**; the platform stores structured content and renders it itself.
+
+| Param | Type | Notes |
+|---|---|---|
+| `action` | string enum | **Required.** `create_article` · `update_article` · `publish_article` · `unpublish_article` · `attach_to_program` · `create_audience` |
+| `articleId` | string | Every article action but `create_article`. |
+| `title` | string | Required on create. The slug is derived from it once and does not follow later renames. |
+| `markdown` | string | The body. On `update_article` it **replaces the whole body** - read with `get kind=article` first. |
+| `category` | string | Free text. Reuse what `find kind=article` already shows rather than inventing a near-duplicate. |
+| `excerpt` | string | One or two sentences for the card. Falls back to the first 200 characters of the text when empty. |
+| `coverMediaId` | string | A media id (image or video). |
+| `slug` | string | Optional override; made unique in the tenant. |
+| `audience` | object | `{ all: true }` or `{ audiences: [saved audience names or ids] }`; reaching any listed audience is enough. Default on create: everyone. |
+| `name` · `description` · `conditions` | | `create_audience`, see below. |
+| `programId` | string | `attach_to_program`. |
+| `collectionName` | string | `attach_to_program`: the program content collection to file it under; created if missing, default "Articles". |
+
+Body syntax, beyond ordinary Markdown (headings 1-3, lists, tables, links, bold/italic/strike/code):
+
+| You write | It becomes |
+|---|---|
+| `![The gym floor](media:<mediaId>)` | An image from the media library, referenced by id and resolved fresh on every read. |
+| `![Demo](media:<mediaId>?kind=video)` | A video. Add `&align=wide` on either for full-bleed. |
+| `> [!tip]` / `> [!info]` / `> [!warning]` on the first line of a blockquote | A tinted callout; the rest of the quote is its body. |
+| `https://www.youtube.com/watch?v=<id>` alone on a line | An embedded YouTube player. |
+
+Anything outside that set degrades to plain text rather than failing; the stored body always fits
+the app's renderer.
+
+`create_article` makes a **DRAFT**. Nothing reaches a client until `publish_article`, which first
+runs the claims guardrail over the title, excerpt and text. A hit is an error carrying `signals`
+(each flagged phrase and the field it sits in) and the article stays a draft - reword in wellness
+language and publish again; there is no override. `unpublish_article` hides it again and keeps its
+place in the feed for a re-publish.
+
+`attach_to_program` adds an ARTICLE item to the program's content section (idempotent). Being on
+the program is its own audience: a client on that program can open the article even when the
+audience rules do not match them - once it is published. `build_program content` also accepts
+`{ type: 'ARTICLE', articleId }` items when you rebuild a whole content section.
+
+**Audiences are saved and reused.** An audience is a named segment of clients: `create_audience`
+with `name` and `conditions`, where conditions **AND** together and each condition matches **any**
+of its `values` (names or ids): `[{ type: "lifecycleStages", values: ["Onboarding"] }, { type:
+"labels", values: ["At risk"] }]` is "Onboarding + At risk"; two `labels` conditions is "Overweight
++ Churn risk". Enumerate the vocabulary with `find kind=lifecycle_stage` and `find kind=client_label`,
+and the saved audiences with `find kind=audience` (each with a live `memberCount`). Then aim an
+article with `audience: { audiences: ["Onboarding + At risk"] }`.
+
+The response echoes `audience` in the friendly shape, `audienceAll` and `audienceIds` as stored,
+the body as `markdown`, and `unresolvedAudience` when a name did not match. An audience list that
+resolves to **nothing** is refused outright.
+
+---
+
 ### `review_inbox`
 
 No required param — `action` defaults to `overview`. 5 actions.
@@ -167,8 +225,9 @@ does not mark them required. `globalSettings.maximumAdvanceDays` is restricted t
 #### Recurring check-ins, and the booking page
 
 `action: "reminder"` is how a weekly check-in gets scheduled: `clientId` + `formId` + `startTime`
-(the FIRST occurrence) + `recurrenceRule`, an iCal RRULE - `FREQ=WEEKLY;BYDAY=MO`, or
-`FREQ=WEEKLY;INTERVAL=2;BYDAY=FR` for fortnightly. Defaults: `responseWindowHours` 48,
+(the FIRST occurrence) + `recurrenceRule`, an iCal RRULE - `FREQ=WEEKLY`, or
+`FREQ=WEEKLY;INTERVAL=2` for fortnightly. The weekday and the time both come from
+`startTime`, so `BYDAY` is not used and is ignored if sent. Defaults: `responseWindowHours` 48,
 `reminderHoursBefore` 0 (fires at the occurrence), `reminderType` PROGRESS_CHECK_IN.
 
 **This call is outward, not configuration.** Despite reading like a scheduling setting, `reminder`
@@ -210,9 +269,11 @@ Required: `action`. 6 actions.
 
 `create` lands the automation in DRAFT. `run` **dispatches an execution now**: outward. Read a
 run's outcome with `find kind=automation_run` + `automationId`.
-`PROGRESS_REPORT` is the one registered kind (triggers `PROGRESS_ENTRY_CREATED` and `MANUAL`);
-confirm with `find kind=automation_kind` before assuming another exists. `run` needs
-`triggerData` - for PROGRESS_REPORT that is `{ entryId: "<progress entry uuid>" }`. **`run` is the
+There are two registered kinds: `PROGRESS_REPORT` (triggers `PROGRESS_ENTRY_CREATED` and
+`MANUAL`) and `FORM_REPORT` (triggers `FORM_SUBMITTED` and `MANUAL`); confirm with
+`find kind=automation_kind` before assuming another exists. `run` needs `triggerData` - for
+PROGRESS_REPORT that is `{ entryId: "<progress entry uuid>" }`, for FORM_REPORT that is
+`{ submissionId: "<form submission uuid>" }`. **`run` is the
 only outward action here, and it is the one held to the `send` tier** (see `guardrails.md`): if
 this connection is at `write` (the default), calling `run` is refused with a
 `PermissionDeniedError` naming the tier needed - that is expected, not a bug, so tell the coach
@@ -250,6 +311,8 @@ the service enforcing role, not the connection's `write`/`send` tier, so no tier
 and no coach role can move a ticket's status or priority, ever. Passing neither `status` nor
 `priority` is a harmless no-op that leaves the ticket untouched.
 
-`find kind=support_ticket` is scoped by **ownership, not tenancy**: a coach sees only the tickets
-they personally filed. The `status` / `area` / `tenantId` / `query` filters on `find` only do
-anything for a Protocol (ADMIN/SYSTEM) caller — a coach's list ignores them rather than erroring.
+`find kind=support_ticket` is scoped by **team permission inside one tenant**: an OWNER or ADMIN of
+a tenant sees every ticket filed in that tenant, and every other member sees only the tickets they
+personally filed. Nobody but Protocol crosses a tenant boundary. The `status` / `area` / `tenantId` /
+`query` filters on `find` only do anything for a Protocol (ADMIN/SYSTEM) caller — a coach's list
+ignores them rather than erroring.

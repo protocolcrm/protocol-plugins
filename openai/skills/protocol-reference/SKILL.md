@@ -27,9 +27,8 @@ recipes as free text with no macros anywhere, a third delivers menus as content 
 than templates at all. Same tools, three unrecognisable houses.
 
 So before a structural write, check whether this operator already has their own documented way of
-doing this: their own project skills (wherever they keep them in their setup) and their own
-CLAUDE.md outrank anything here. When the coach corrects you on how it is done here rather than on
-a fact, offer to record the correction, either in the user's own CLAUDE.md or as a project skill,
+doing this: their own project skills (wherever they keep them in their setup) and their own standing instructions outrank anything here. When the coach corrects you on how it is done here rather than on
+a fact, offer to record the correction, either in the user's own custom instructions or as a project skill,
 so it persists for next time instead of getting re-explained. The things worth remembering in
 coaching, from what these accounts actually do:
 

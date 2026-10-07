@@ -66,6 +66,16 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
   That is how ~99.7% of this product's real programs are shaped, so do not "clean it up" or report it
   as a fault. It also means edits to the client's copy are per-day: change the session on the day
   you mean.
+- **The id you place is often not the id that lands.** A program owns everything inside it: on
+  every phases write the server copies any referenced workout or nutrition template that is a
+  library row, belongs to another client, belongs to another program, or is already on another day
+  of this one, and points the day at the copy instead. You cannot opt out and do not need to do it
+  yourself - but never assume your ids survived. `get` the program back before reasoning about what
+  is on which day. Nutrition templates are the one exception that may repeat across weeks.
+- **Say whose work you used.** `find scope=mine|team|all` chooses a shelf and every row carries its
+  `visibility`. If you built a plan out of the team's shared library rather than this coach's own,
+  tell them - they will find out later otherwise. Ask with `scope`; never assemble the filter from
+  an owner and a visibility yourself, because half of "mine" reads every private row in the tenant.
 - **`repRule` is a structured grammar, not prose** - `"8-10"`, `"10 / 8 / 6"`, `"10x25kg"`, `"30s"`.
   Free text ("AMRAP", "to failure", "60s hold") is rejected, because the coach's own builder would
   render it as invalid. Unilateral work has no notation: keep `repRule` numeric and say "each side"

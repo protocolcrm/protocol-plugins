@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added `protocol-reporting`: how to narrate the `report` verb honestly, including when to trust
+  a verdict, when sparse data is normal rather than a stall, and the fixed wording for the
+  prescribed-load audit.
+
 ## 0.1.0
 
 First release. Nine skills for operating your Protocol CRM from Claude, plus a

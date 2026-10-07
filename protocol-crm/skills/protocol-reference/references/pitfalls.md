@@ -176,6 +176,21 @@ Multi-action verbs read only the fields that action uses:
 - `build_nutrition.metadata` honors only `name` / `description` / `tags` / `templateMode`. Other
   keys in the patch are dropped by design.
 - `manage_media action=update_share` cannot change `shareType`. Recreate the share to re-type it.
+- `manage_content` bodies are Markdown, and **media inside them is referenced by id**:
+  `![caption](media:<mediaId>)`, never a URL. An external image URL is imported as its alt text,
+  not as an image; attach the file with `manage_media action=attach` first, then embed its id.
+- `manage_content action=update_article` with `markdown` **replaces the whole body**. Read it with
+  `get kind=article` first and send the edited text back, or a one-line fix deletes the article.
+- `manage_content action=publish_article` runs the claims guardrail over the coach's own words. A
+  refusal returns `signals` (phrase + field) and leaves the article a draft. There is no override
+  flag: reword the sentence in wellness language (`guardrails.md`) and publish again. Never paraphrase
+  the refusal as a bug.
+- `manage_content` aims articles at **saved audiences**, by name or id, not at labels directly.
+  A name that matches nothing is reported under `unresolvedAudience`; a list that resolves to
+  nothing is refused rather than published to nobody. `find kind=audience` lists them; make one
+  with `action=create_audience`. Inside an audience conditions **AND** together (each matches
+  any of its values), so "Onboarding + At risk" is two conditions in ONE audience, not two
+  audiences.
 
 ---
 
@@ -199,7 +214,7 @@ preserved-on-purpose behavior, not an error to route around.
 If a verb can't express what the coach asked, the answer is **not** to find a lower-level route
 around it. Two legitimate moves:
 
-1. Do it a different way within the 19 verbs.
+1. Do it a different way within the 22 verbs.
 2. Tell the coach plainly what you couldn't do and offer `report_to_developers`.
 
 **Exception: a tier refusal or a tier-filtered absent verb is neither of these.** If a verb exists

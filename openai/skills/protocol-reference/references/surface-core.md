@@ -5,17 +5,17 @@ grammar that array parameters follow across the whole surface. **Read this one f
 domain files assume it.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 19 verbs:
+> rather than all 22 verbs:
 >
 > | File | Verbs |
 > |---|---|
-> | `surface-core.md` | `find` · `get` · the kind table · the replace grammar · `report_to_developers` |
+> | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` · `guide` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
 
 
-The whole served surface is **exactly 19 intent verbs**. There are no other tools. Each verb
+The whole served surface is **exactly 22 intent verbs**. There are no other tools. Each verb
 reshapes your input and forwards it to Protocol's internal layer, so **parameter names are exact** —
 see `pitfalls.md` for why a wrong key is worse than an error.
 
@@ -28,9 +28,9 @@ is two-layered: the tool list itself is tier-filtered (a `read` connection's `li
 includes the write verbs at all - they are **absent**, not refused), and a call above the
 connection's tier is also refused at call time, as defense-in-depth. See `guardrails.md` for the
 full model and what to do about either. Every verb in this file needs at most `write` tier
-(`find`/`get`/`review_client`/`message` are `read`; `report_to_developers` is `write`) - so if the
-coach chose `read` only, `report_to_developers` itself will simply be absent from your tool list,
-not denied when you try to call it.
+(`find`/`get`/`review_client`/`report`/`message`/`guide` are `read`; `report_to_developers` is `write`) -
+so if the coach chose `read` only, `report_to_developers` itself will simply be absent from your
+tool list, not denied when you try to call it.
 
 ## Verb index
 
@@ -39,7 +39,9 @@ not denied when you try to call it.
 | `find` | read | List/search entities of one kind. |
 | `get` | read | Fetch one entity by id, full detail. |
 | `review_client` | read | One-call full picture of a single client. |
+| `report` | read | Aggregate a window of history into a report. Six kinds: `training` gives verdicts, the other five give structured data with no judgement attached. Several report explicitly what they cannot compute. |
 | `message` | read | Read conversations/messages. Does **not** send. |
+| `guide` | read | These playbooks and reference files, served by the server itself. |
 | `manage_client` | write | Create/update a client, its stage, trainer, and 4 profiles. |
 | `build_program` | write | Create/edit a program's structure (metadata, phases, content). |
 | `assign_program` | write | Assign (deep-copy) a program to a client, or flip its lifecycle. |
@@ -50,6 +52,7 @@ not denied when you try to call it.
 | `manage_forms` | write | Create/update an intake / check-in / assessment form. |
 | `manage_tasks` | write | The whole kanban surface (tasks, subtasks, boards, columns, labels). |
 | `manage_media` | write | Media library: attach, edit, categorize, share. |
+| `manage_content` | write | Articles: author from Markdown, edit, publish (claims-gated), attach to a program; save reusable audiences. |
 | `review_inbox` | write | The coach's "what needs me" bundle + triage flips. |
 | `manage_support` | write | Comment on / (Protocol only) move the status of a filed support ticket. |
 | `report_to_developers` | write | Escalate a gap. Emails a fixed internal inbox, never a client — and now files a tracked ticket. |
@@ -63,7 +66,7 @@ client: `schedule action=send_reminder` (fires now), `schedule action=reminder` 
 push), and `manage_automations action=run` (dispatches an execution whose post-actions can email or
 WhatsApp). If this connection is below `send`, calling one of those three is refused by the
 platform with a `PermissionDeniedError` naming the tier needed - tell the coach plainly and stop,
-per `guardrails.md`. Never treat that refusal as a reason to fall back to `protocol-rest-escape`.
+per `guardrails.md`. Never treat that refusal as a reason to fall back to a direct API key.
 
 ---
 
@@ -77,11 +80,12 @@ Required: `kind`.
 
 | Param | Type | Notes |
 |---|---|---|
-| `kind` | string | **Required.** One of the 26 kinds below. |
+| `kind` | string | **Required.** One of the 28 kinds below. |
 | `query` | string | Free-text search (where the kind supports it). |
 | `clientId` | string | Filter to one client (where supported). |
 | `formId` | string | `kind=submission`. |
 | `isTemplate` | boolean | Templates vs client-assigned (program / workout / nutrition). |
+| `scope` | string | **Whose library.** `mine` (yours, unshared), `team` (shared with the team), `all` (default). Applies to `kind=workout` / `nutrition` / `program` / `exercise` / `media`. |
 | `status` | string | Status filter (where supported). |
 | `limit` | number | Result cap. |
 | `muscleGroup` | string | `kind=exercise` — primary muscle group (e.g. CHEST, BACK, THIGHS). |
@@ -96,6 +100,15 @@ Required: `kind`.
 Filters that a given kind's underlying list doesn't support are **ignored silently** — you get the
 unfiltered list, not an error.
 
+**Whose shelf.** The library has two: what this coach owns and hasn't shared, and what the team
+has shared. Rows come back carrying their own `visibility` (`PRIVATE` / `TEAM`), so you can always
+tell the coach where something came from — say so when you build a plan out of a colleague's work.
+
+Ask with the one word. Do **not** try to compose it out of `ownerId` and `visibility` yourself:
+"mine" is an owner *and* a visibility, and half of it is a different question rather than a
+narrower one — a visibility with no owner matches every private row in the tenant, which is other
+coaches' unshared work. The translation lives on the server.
+
 ---
 
 ### `get` — fetch one entity by id
@@ -104,8 +117,107 @@ Required: `kind`, `id`.
 
 | Param | Type | Notes |
 |---|---|---|
-| `kind` | string | **Required.** One of the 18 `get` kinds below. |
+| `kind` | string | **Required.** One of the 19 `get` kinds below. |
 | `id` | string (uuid) | **Required.** The entity id. `get` maps it onto the right id param for you. |
+
+---
+
+### `report` — aggregate a window of history
+
+Required: `kind`.
+
+| Param | Type | Notes |
+|---|---|---|
+| `kind` | string | **Required.** One of the report kinds below. |
+| `subject` | string | `roster` \| `client`. Defaults to `client` when `clientId` is set, else `roster`. |
+| `clientId` | string | Required when `subject=client`. |
+| `from` / `to` | string | Window bounds, `YYYY-MM-DD`. `to` defaults to today; `from` defaults to 30 days before `to`. |
+| `compareToPrevious` | boolean | `kind=training` only: echoes a `previousWindow` block of reference dates. Default `true`. **No delta against it is computed** anywhere in the response, for ANY kind, so never narrate one. Every other kind reports `previousWindow` as null. `kind=checkin` does compute `deltaFromBaseline`, but that is measured against the client's first entry on record, not bounded by the window and not a preceding window; `kind=body` computes a delta across the window it was given. |
+| `limit` / `offset` | number | Roster paging (max ~200 rows per page). |
+| `entriesCount` | number | `kind=checkin`: how many entries to return. Default 6, max 20. |
+| `messagesCount` | number | `kind=checkin`: how many recent messages. Default 20, max 50, `0` to omit. |
+| `priorReportsCount` | number | `kind=checkin`: how many of the coach's previous reports. Default 2, max 5, `0` to omit. |
+| `includeIntake` | boolean | `kind=checkin`: include the initial questionnaire. Default `true`. |
+| `includeProfile` | boolean | `kind=checkin`: include the client profile snapshot. Default `true`. |
+| `seriesPoints` | number | `kind=body`: daily points per metric. Default 30, max 90, `0` to omit the series. |
+| `seriesDays` | number | `kind=nutrition`: days of daily series. Default 60, max 180, `0` to omit. |
+| `timelineDays` | number | `kind=engagement`: days of contact timeline. Default 60, max 180, `0` to omit. |
+| `purchasesCount` | number | `kind=business`: purchases returned, newest first. Default 20, max 100, `0` to omit. |
+
+`report` is a different job from `find kind=report`: `find`/`get kind=report` read the coach's
+saved **progress-report** documents (one per check-in); `report` computes a fresh **aggregate**
+over raw history on demand — it does not read or write any saved report row.
+
+**Pick the subject to match the question.** `subject=roster` gives you one thin row per client, so
+use it first to see who needs attention across the whole book: for `kind=training`, who is
+progressing, flat, regressing or an anomaly; for `kind=checkin`, cadence, the headline measurement
+deltas and flags like `no_checkins_in_window`, `overdue_checkin` and `never_checked_in`. Once you
+know who, switch to `subject=client` with `clientId` set for the detail: per-exercise progression
+verdicts, volume load and the prescribed audit on `kind=training`, or the entries, grouped answers
+and intake on `kind=checkin`. Do not fetch every client's full detail to answer a roster-level
+question; that is what `subject=roster` is for. A `checkin` roster deliberately carries no answers,
+entries or messages, because a 40-client roster would otherwise return thousands of
+question-answer pairs.
+
+Report kinds:
+
+| kind | legacy tool | what it aggregates |
+|---|---|---|
+| `training` | `report_training` | Session counts and volume load, a prescribed-progression audit, and per-exercise progression verdicts (`progressing` / `flat` / `regressing` / `data_anomaly`). |
+| `checkin` | `report_checkin` | The client's check-in history as structured data: entries, measurement series against their first entry on record, questions grouped into dated answer series, cadence, and (on `subject=client`) intake, profile, recent messages and the coach's prior reports. **No verdicts.** Nothing scores the answers, because they are free text a coach wrote, often not in English. Read them and draw the conclusion out loud yourself. |
+| `body` | `report_body` | Device and lab health metrics: one series per metric with `first`/`last`/`delta`/`min`/`max`/`mean`, the canonical `unit` and `category`, the contributing `sources`, and an `optimalRange`. **No verdicts, no clinical assessment.** |
+| `nutrition` | `report_nutrition` | What the client logged eating: a daily series, means over the days they logged, a macro split, and how many of the window's days carry a log at all. **No adherence.** |
+| `engagement` | `report_engagement` | In-app messages by direction, contact recency, longest silence, active conversations, and appointments **booked**, with reminder records counted separately. **No attendance.** |
+| `business` | `report_business` | Purchases with status and expiry, active/expired counts, next expiry, and paid-invoice totals for the window and for all time. All money in **cents**, keyed **by currency**. **No recurring revenue.** |
+
+The kinds differ in kind, not just in subject matter. `kind=training` hands you conclusions and
+echoes the `thresholds` they were computed with. Every other kind hands you data and computes
+nothing about it, so none of them carries `thresholds` and all report a null `previousWindow`. Do
+not paraphrase a check-in answer into a verdict and attribute it to the client.
+
+#### What these kinds refuse to tell you, and why
+
+Four of them are missing a headline you would reasonably expect, because the data cannot support
+it. Each says so in its own `notes` on every response. Relay the refusal if the coach asks for the
+missing thing; do not fill the gap by inferring it.
+
+| You may be asked for | What you actually get | Why |
+|---|---|---|
+| Nutrition adherence, "is she hitting her macros" | Intake and logging consistency only | No target exists anywhere: no log carries a template link, and the client nutrition profile holds only free-text preferences. There is nothing to compare against. |
+| Attendance, no-shows, "did he turn up" | Appointments **booked** | Appointment status is never transitioned in this system, so almost every past appointment still reads `SCHEDULED`. A computed attendance rate would say nobody ever attends. |
+| MRR, churn, renewal rate | Purchases, statuses and expiry dates | No subscription linkage exists on any purchase, and most do not record whether they recur. |
+| "Is this client healthy", ranges | Metric series plus an `optimalRange` band | `optimalRange` is the platform's own display band, the same one the coach sees in the app. It is reference data, not a diagnosis, and turning it into one is a claims violation, not just a stretch: see "Claims and intended purpose" in `guardrails.md`. `weight`'s band in particular is computed from the client's **own** observed range, so inside it means their weight has been stable, not that it is healthy. |
+
+Two more traps specific to these kinds:
+
+- **`kind=body`: a metric with `backfilledOnly: true` is history, not tracking.** Most stored health
+  data arrived through a one-off bulk import rather than a live device sync. Check `sources` and
+  `backfilledOnly` before saying a client "has been tracking" anything.
+- **`kind=nutrition`: a day with no log is a day nothing was LOGGED, not a day nothing was eaten.**
+  `daysLogged` and `daysInWindow` are both reported so you can see the difference, and the means are
+  over logged days only.
+- **`kind=engagement` sees in-app messages only.** Coaches also use WhatsApp, so silence here is not
+  evidence of no contact, and response times are deliberately not computed.
+- **`kind=business` money is in cents and keyed by currency.** Divide by 100 before saying an amount
+  to a person, and never add figures across currencies.
+
+**Read `coverage`, `notes`, and (when present) `limits` before narrating anything.** Every response
+carries a `coverage` block (e.g. `sessionsLogged`/`exercisesReported` for a `training` client report,
+`entriesInWindow`/`entriesReturned`/`entriesTotal`/`intakePresent`/`degradedSections` for a `checkin`
+client report, `clientsRequested`/`clientsReturned`/`clientsWithData` for any roster) so you can
+say exactly what the numbers are built from, not just what they say. `notes` is plain-language
+context worth relaying verbatim or near-verbatim: how many roster clients logged nothing this
+window, that a client has too few sessions for a real verdict, what period the prescribed audit
+actually covers, or that a section failed to load and its emptiness means nothing about the client.
+`limits` only appears when something was capped or collapsed (a roster page truncated to the hard
+cap, a verdict collapsed for too few sessions, an entries page shorter than the window holds), so
+treat its presence as "this is not the whole picture," the same way `hasMore` works for `find`. An
+unknown `kind` is rejected with the valid kinds named in the error; do not guess a kind that is not
+in the table above.
+
+Two coverage keys are assertions of absence rather than counts, and they are on every response of
+their kind: `attendanceTracked: false` on `kind=engagement` and `recurringRevenueTracked: false` on
+`kind=business`. They are there so the gap is a stated fact you can relay, not a silence you fill in.
 
 ---
 
@@ -155,6 +267,8 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 | `submission` | ✓ | ✓ | `submissionId` |
 | `transcript` | ✓ | ✓ | `transcriptId` |
 | `support_ticket` | ✓ | ✓ | `ticketId` — see `manage_support` in `surface-operations.md` |
+| `article` | ✓ | ✓ | `articleId` — `get` returns the body as **Markdown**; `find` reads `status` (DRAFT/PUBLISHED), `scope` (mine/team), `query`, `category`. See `manage_content` in `surface-operations.md` |
+| `audience` | ✓ | — | list-only — the saved client segments articles are aimed at, with conditions and a live `memberCount`; `query` filters by name |
 | `conversation` | ✓ | — | list-only |
 | `lifecycle_stage` | ✓ | — | list-only |
 | `lab` | ✓ | — | list-only |
@@ -225,6 +339,21 @@ human-readable prose already worded to match those three fields, but if you are 
 more specific than `message` verbatim, check the booleans rather than assuming both channels went
 through — a coach whose ticket write failed still gets a truthful "the ticket did not get filed"
 in `message`, not a false "filed" claim.
+
+---
+
+### `guide`
+
+Optional: `topic`.
+
+| Param | Type | Notes |
+|---|---|---|
+| `topic` | string | A playbook (`protocol-build-program`) or a reference file (`protocol-reference/surface-core.md`, the relative link a playbook uses, or the bare file name when it is unique). Omit to list every topic. |
+
+Serves the same playbooks and reference files a plugin install bundles, so a connection made
+without the plugin (a custom connector, a custom MCP server in ChatGPT) can still read them. With
+no `topic` it returns `playbooks` (name + when to use it) and `references`; with one it returns
+that file as `markdown`. Read-only. Call it before multi-step work you have no playbook loaded for.
 
 ---
 

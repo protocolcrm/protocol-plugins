@@ -5,14 +5,14 @@ and the exercise/food library behind them. Assumes `surface-core.md`, especially
 grammar - every array here follows it.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 19 verbs:
+> rather than all 22 verbs:
 >
 > | File | Verbs |
 > |---|---|
-> | `surface-core.md` | `find` · `get` · the kind table · the replace grammar · `report_to_developers` |
+> | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
 
 
 ---
@@ -81,6 +81,17 @@ independent: editing one does not disturb the other.
 | `contentDays` | `{ mediaIds: ["<mediaId>"] }` |
 
 Nutrition placed on a `workoutDay` is **not rendered** — it must go in `nutritionDays`.
+
+**A workout id may appear only once per program.** Completion is stored per workout row, with no
+week and no day attached, so two weeks referencing one id also share their tick: the client trains
+one Monday and every other week shows that day done. Write the same session into as many weeks as
+the plan calls for — each repeat is given its own copy automatically, and the response reports
+`copiedRepeatedWorkouts`. The consequence worth knowing is that the weeks are then independent:
+editing week 3 no longer changes weeks 1, 2 and 4. Template programs are left alone, because
+`assign_program` already copies per placement.
+
+`plannedNutritionTemplates` ids are **not** affected — reuse one meal plan across every week freely,
+which is what makes editing it once update them all.
 
 Day objects are **not** reconciled the way rows are: they are stored as given. A day whose fields are
 not from the real vocabulary is rejected outright rather than coerced (an invented

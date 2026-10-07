@@ -38,6 +38,5 @@ actually need the operator.
 
 - Never dismiss an insight the operator has not seen if it concerns a client's health or a payment.
   Surface those, do not clear them.
-- Reading messages is not replying. Protocol has no MCP verb that messages a client - see
-  `../protocol-rest-escape` for why, and what it costs to do it anyway.
+- Reading messages is not replying. Protocol has no MCP verb that messages a client. Draft the reply and let the operator send it from Protocol.
 - Say what you cleared, always. Silent triage is indistinguishable from losing things.

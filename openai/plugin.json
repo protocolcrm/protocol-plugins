@@ -20,7 +20,7 @@
         "category": "Business & Operations",
         "capabilities": ["Read", "Write"],
         "websiteURL": "https://protocolcrm.com",
-        "supportURL": "https://help.protocolcrm.com/ai-agent/chatgpt",
+        "supportURL": "https://help.protocolcrm.com/ai-agent-chatgpt",
         "privacyPolicyURL": "https://protocolcrm.com/privacy-policy.html",
         "termsOfServiceURL": "https://protocolcrm.com/terms-and-conditions.html",
         "defaultPrompt": [

@@ -48,13 +48,23 @@ Verb + param source: **[surface-clients.md](../../protocol-reference/references/
    ```
    record_progress action=report reportAction=approve reportId=<reportId>
    ```
+   Several the coach reviewed at once (say, over the weekend) go in one call, and the response
+   lists each report approved or skipped with its reason - read the skips back to the coach:
+   ```
+   record_progress action=report reportAction=approve_many reportIds=[<id>, <id>, ...]
+   ```
+   Both are silent unless the coach also wants the client pushed: `notifyClient: true`, which needs
+   a `send`-tier connection.
+5. **A report that went out wrong** is taken back with `reportAction=unsend reportId=<reportId>`:
+   it returns to DRAFT and leaves the client's app at once. Correct it with `update`, then approve
+   it again; the client is never pushed twice for the same report.
 
 ## Gotchas
 
-- **`reportAction: approve` or `discard` ignores any edit fields sent in the same call.** If you
+- **`reportAction: approve` or `discard` refuses any edit fields sent in the same call.** If you
   need to change `clientFacingSummary`/`sections`/etc. *and* approve or discard, that's two calls:
-  `reportAction=update` first, then `reportAction=approve`/`discard` as a separate call — never
-  bundle an edit into the same call as the sign-off action.
+  `reportAction=update` first, then `reportAction=approve`/`discard` as a separate call. Bundling
+  them is refused and nothing is approved.
 - **Realistic round numbers, always** — the server's own connection-time instructions (restated in
   `../../protocol-reference/references/guardrails.md`) prefer a tidy number slightly off target
   over an exact one built from awkward fractions; this applies directly to anything you write into
@@ -70,7 +80,7 @@ Verb + param source: **[surface-clients.md](../../protocol-reference/references/
 
 - `../../protocol-reference/references/surface-clients.md` — `record_progress`'s full param list.
 - `../../protocol-reference/references/pitfalls.md`: the report-editing pitfall (see
-  "Action-specific fields are dropped by the other actions").
+  "Action-specific fields belong to their action").
 - `../../protocol-reference/references/guardrails.md` — house style (round numbers, mirror the
   coach) and the coach-approval pattern for client-facing outputs.
 - [find and review a client recipe](../../protocol-client-review/references/recipe.md) — the

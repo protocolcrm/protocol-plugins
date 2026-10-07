@@ -5,17 +5,17 @@ grammar that array parameters follow across the whole surface. **Read this one f
 domain files assume it.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 22 verbs:
+> rather than all 23 verbs:
 >
 > | File | Verbs |
 > |---|---|
 > | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` · `guide` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` · `manage_shop` |
 
 
-The whole served surface is **exactly 22 intent verbs**. There are no other tools. Each verb
+The whole served surface is **exactly 23 intent verbs**. There are no other tools. Each verb
 reshapes your input and forwards it to Protocol's internal layer, so **parameter names are exact** —
 see `pitfalls.md` for why a wrong key is worse than an error.
 
@@ -30,7 +30,8 @@ connection's tier is also refused at call time, as defense-in-depth. See `guardr
 full model and what to do about either. Every verb in this file needs at most `write` tier
 (`find`/`get`/`review_client`/`report`/`message`/`guide` are `read`; `report_to_developers` is `write`) -
 so if the coach chose `read` only, `report_to_developers` itself will simply be absent from your
-tool list, not denied when you try to call it.
+tool list, not denied when you try to call it. (`message` lists at `read`, but its one write,
+`action=draft`, needs `write`.)
 
 ## Verb index
 
@@ -40,33 +41,37 @@ tool list, not denied when you try to call it.
 | `get` | read | Fetch one entity by id, full detail. |
 | `review_client` | read | One-call full picture of a single client. |
 | `report` | read | Aggregate a window of history into a report. Six kinds: `training` gives verdicts, the other five give structured data with no judgement attached. Several report explicitly what they cannot compute. |
-| `message` | read | Read conversations/messages. Does **not** send. |
+| `message` | read* | Read the inbox and conversations; `action=draft` leaves a draft for the coach (write). Never sends. |
 | `guide` | read | These playbooks and reference files, served by the server itself. |
-| `manage_client` | write | Create/update a client, its stage, trainer, and 4 profiles. |
+| `manage_client` | write | Create/update a client, its stage, trainer, access tier, and 4 profiles. |
 | `build_program` | write | Create/edit a program's structure (metadata, phases, content). |
 | `assign_program` | write | Assign (deep-copy) a program to a client, or flip its lifecycle. |
 | `build_workout` | write | Create/edit a workout: metadata + full exercise tree. |
 | `build_nutrition` | write | Create/edit a nutrition template: metadata + full item tree. |
-| `record_progress` | write | Check-in entry, progress-report triage, or meeting note. |
+| `record_progress` | write | Check-in entry, progress-report triage (incl. batch approve and unsend), or meeting note. |
 | `manage_library` | write | Custom exercises; batch-resolve food names. |
 | `manage_forms` | write | Create/update an intake / check-in / assessment form. |
 | `manage_tasks` | write | The whole kanban surface (tasks, subtasks, boards, columns, labels). |
 | `manage_media` | write | Media library: attach, edit, categorize, share. |
-| `manage_content` | write | Articles: author from Markdown, edit, publish (claims-gated), attach to a program; save reusable audiences. |
+| `manage_content` | write | Articles: author from Markdown, edit, publish (claims-gated), attach to a program, duplicate, tag and file, share by public link, delete (confirm-guarded); save, edit and delete reusable audiences. |
 | `review_inbox` | write | The coach's "what needs me" bundle + triage flips. |
 | `manage_support` | write | Comment on / (Protocol only) move the status of a filed support ticket. |
 | `report_to_developers` | write | Escalate a gap. Emails a fixed internal inbox, never a client — and now files a tracked ticket. |
 | `schedule` | write* | Appointments, check-in reminders, booking config, send a reminder now. |
 | `manage_automations` | write* | Build/operate automations; `run` dispatches an execution now. |
+| `manage_shop` | write* | Shop bookkeeping: record a sale to a client (`create_purchase`, send) or money received (`record_payment`). Never charges a card. |
 
-\* **The tier split on these two is per-ACTION, not per-verb.** Both verbs list at `write` because
-all but a few of their actions are ordinary internal writes: booking an appointment, reading the
-booking config, authoring an automation. Three actions are held to `send` because they reach a
-client: `schedule action=send_reminder` (fires now), `schedule action=reminder` (arms a recurring
-push), and `manage_automations action=run` (dispatches an execution whose post-actions can email or
-WhatsApp). If this connection is below `send`, calling one of those three is refused by the
-platform with a `PermissionDeniedError` naming the tier needed - tell the coach plainly and stop,
-per `guardrails.md`. Never treat that refusal as a reason to fall back to a direct API key.
+\* **The tier split on these verbs is per-ACTION, not per-verb.** `schedule`, `manage_automations`
+and `manage_shop` list at `write` because most of their actions are ordinary internal writes:
+booking an appointment, reading the booking config, authoring an automation, recording a payment.
+Four actions are held to `send` because they reach a client: `schedule action=send_reminder` (fires
+now), `schedule action=reminder` (arms a recurring push), `manage_automations action=run`
+(dispatches an execution whose post-actions can email or WhatsApp), and `manage_shop
+action=create_purchase` (bills the client: it shows in their app and arms payment and expiry
+reminders). `message` works the other way round: it lists at `read` so a read-only connection keeps
+the inbox, and its one write, `action=draft`, needs `write`. If this connection is below the tier
+an action needs, the call is refused by the platform with a `PermissionDeniedError` naming the tier
+- tell the coach plainly and stop, per `guardrails.md`. Never treat that refusal as a reason to fall back to a direct API key.
 
 ---
 
@@ -80,7 +85,7 @@ Required: `kind`.
 
 | Param | Type | Notes |
 |---|---|---|
-| `kind` | string | **Required.** One of the 28 kinds below. |
+| `kind` | string | **Required.** One of the 34 kinds below. |
 | `query` | string | Free-text search (where the kind supports it). |
 | `clientId` | string | Filter to one client (where supported). |
 | `formId` | string | `kind=submission`. |
@@ -96,6 +101,19 @@ Required: `kind`.
 | `specialPurpose` | string | `kind=submission` — CHECK_IN, INITIAL_QUESTIONNAIRE, SURVEY, OTHER. |
 | `labelNames` | string[] | `kind=client` — clients carrying these labels, **by name**. Enumerate them with `find kind=client_label`. A name that matches no label returns **nobody**, not everybody. |
 | `labelMatch` | string | `kind=client` — `any` (default) carries at least one of `labelNames`; `all` carries every one. Use `all` for a segment like VIP *and* marathon-prep. |
+| `from` / `to` | string | `kind=appointment` / `health_metric` / `client_history` / `workout_session` — the window, `YYYY-MM-DD` or ISO-8601; a bare `to` date includes that whole day. |
+| `types` | string[] | `kind=client_history` — only these event types (`stage.changed`, `label.added`, `label.removed`, `reminder.assignee_changed`, `program.assigned`, `program.status_changed`, `checkin.submitted`, `form.submitted`, `purchase.created`, `purchase.status_changed`, `purchase.renewed`, `invoice.paid`, `email.sent`, `email.failed`, …). An unknown type is refused with the valid list. |
+| `order` | string | `kind=client_history` — `desc` (default, newest first) or `asc`. |
+| `cursor` | string | `kind=client_history` — the `nextCursor` of the previous page. This kind pages by cursor, **not** `offset`. |
+| `includeSets` | boolean | `kind=workout_session` — every exercise and set (see *What the client actually did* in `surface-clients.md`). |
+| `folder` | string | `kind=client_media` — a folder key from the tree (`checkins`, `checkins/2026-09`, `forms/<formId>`, `chat/2026-09`, `nutrition/2026-09`, `profile`); omit for the tree. |
+| `favorites` | boolean | `kind=exercise` — only the exercises this coach starred. Every exercise row carries `isFavorite`. |
+| `tags` | string[] | `kind=exercise` — tenant exercise tags as `key:value`; an exercise must carry **all** of them. |
+| `variants` | string | `kind=exercise` — `all` lists every gender/version variant of a public exercise (default: one row each). |
+| `includeArchived` | boolean | `kind=habit` — also the coach's retired custom habits. |
+| `installmentState` | string | `kind=purchase` — installment plans that are `OVERDUE`, `DUE_SOON`, `ON_TRACK` or `FULLY_PAID`. |
+| `expiresBefore` / `expiresWithinDays` | string / number | `kind=purchase` — access ends on or before a date, or within the next N days: the renewal list. |
+| `unread` / `hasDraft` / `reminderAssigneeId` | boolean / boolean / string | `kind=conversation` — the inbox filters (also on `message action=list`, with `labelNames` and `lifecycleStageId`). |
 
 Filters that a given kind's underlying list doesn't support are **ignored silently** — you get the
 unfiltered list, not an error.
@@ -144,6 +162,16 @@ Required: `kind`.
 | `timelineDays` | number | `kind=engagement`: days of contact timeline. Default 60, max 180, `0` to omit. |
 | `purchasesCount` | number | `kind=business`: purchases returned, newest first. Default 20, max 100, `0` to omit. |
 
+**Whose clients.** The client set is decided by the account's permissions, the same rule `find`,
+`get` and `review_client` use: an owner or admin reaches every client in the team, a coach reaches
+the clients assigned to them. There is no parameter that widens or narrows it. A `clientId` outside
+that set returns empty with a note saying the client is **not on your roster**, which is not the
+same as the client not existing; check the id with `find kind=client`.
+
+**Unknown parameters are refused, not ignored.** A key that is not in the table above (for example
+`team: true`) fails the call with an error naming the key and listing the valid parameters, so a
+report can never quietly answer a different question than the one you asked.
+
 `report` is a different job from `find kind=report`: `find`/`get kind=report` read the coach's
 saved **progress-report** documents (one per check-in); `report` computes a fresh **aggregate**
 over raw history on demand — it does not read or write any saved report row.
@@ -169,6 +197,7 @@ Report kinds:
 | `nutrition` | `report_nutrition` | What the client logged eating: a daily series, means over the days they logged, a macro split, and how many of the window's days carry a log at all. **No adherence.** |
 | `engagement` | `report_engagement` | In-app messages by direction, contact recency, longest silence, active conversations, and appointments **booked**, with reminder records counted separately. **No attendance.** |
 | `business` | `report_business` | Purchases with status and expiry, active/expired counts, next expiry, and paid-invoice totals for the window and for all time. All money in **cents**, keyed **by currency**. **No recurring revenue.** |
+| `habits` | `report_habits` | Per habit, built-in and custom alike: `daysLogged`, `daysCompleted`, `completionPct` over **logged** days, the mean of any values entered with its `unit`, and `lastLoggedOn`. The roster gives one rate per client across all habits. Default window 30 days. **No targets**, so no expected-days denominator. |
 
 The kinds differ in kind, not just in subject matter. `kind=training` hands you conclusions and
 echoes the `thresholds` they were computed with. Every other kind hands you data and computes
@@ -200,15 +229,22 @@ Two more traps specific to these kinds:
   evidence of no contact, and response times are deliberately not computed.
 - **`kind=business` money is in cents and keyed by currency.** Divide by 100 before saying an amount
   to a person, and never add figures across currencies.
+- **`kind=habits`: `completionPct` is over the days a habit was LOGGED.** A day with no log is a day
+  nothing was logged, not a missed habit, so read `daysLogged` against `daysInWindow` before saying
+  anything about consistency. `derived: true` (SESSION_COMPLETED) is completed by Protocol from a
+  logged workout, not ticked by the client. Habits are wellness routines: describe consistency,
+  never adherence to a treatment.
 
 **Read `coverage`, `notes`, and (when present) `limits` before narrating anything.** Every response
-carries a `coverage` block (e.g. `sessionsLogged`/`exercisesReported` for a `training` client report,
+carries a `coverage` block (e.g. `sessionsLogged`/`exercisesReported`/`degradedSections` for a `training` client report,
 `entriesInWindow`/`entriesReturned`/`entriesTotal`/`intakePresent`/`degradedSections` for a `checkin`
 client report, `clientsRequested`/`clientsReturned`/`clientsWithData` for any roster) so you can
 say exactly what the numbers are built from, not just what they say. `notes` is plain-language
 context worth relaying verbatim or near-verbatim: how many roster clients logged nothing this
 window, that a client has too few sessions for a real verdict, what period the prescribed audit
-actually covers, or that a section failed to load and its emptiness means nothing about the client.
+actually covers, or that a section failed to load and its emptiness means nothing about the client
+(on `kind=training`, the prescribed-programs comparison can fail on its own; the sessions and
+verdicts still come back, and the note says the `prescribed` blocks are defaults, not findings).
 `limits` only appears when something was capped or collapsed (a roster page truncated to the hard
 cap, a verdict collapsed for too few sessions, an entries page shorter than the window holds), so
 treat its presence as "this is not the whole picture," the same way `hasMore` works for `find`. An
@@ -232,8 +268,12 @@ A paged response tells you where you stand:
 
 **Loop while `nextOffset` comes back**, passing it as the next `offset`. `total` is the real count,
 so "86 check-ins, I read all 86" is a statement you can make honestly. Paged today: `progress`,
-`task`, `appointment`, plus the kinds that already had it (`client`, `form`, `automation`, `media`,
-`report`, `submission`, `automation_run`).
+`task`, `appointment`, `workout_session`, `client_media` (files in a folder), plus the kinds that
+already had it (`client`, `form`, `automation`, `media`, `report`, `submission`, `automation_run`).
+`habit`, `product` and `recent_exercise` come back whole, with a `total`.
+
+**`client_history` pages by cursor instead.** The response carries `hasMore` and `nextCursor`; pass
+`nextCursor` back as `cursor` and keep going while it comes back. There is no `offset` for it.
 
 On kinds without paging there is no `total`, and the response falls back to a warning instead:
 `defaultLimitApplied` (you set no limit, so a default cap applied) or `truncated` (you got exactly
@@ -245,7 +285,7 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 
 ### `find` / `get` kind table
 
-26 `find` kinds; `get` covers an 18-kind subset. The 8 list-only kinds have **no by-id fetch**.
+34 `find` kinds; `get` covers a 19-kind subset. The 15 list-only kinds have **no by-id fetch**.
 
 | kind | `find` | `get` | id param used internally |
 |---|---|---|---|
@@ -277,6 +317,12 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 | `automation_kind` | ✓ | — | list-only; the kind catalog, takes no params |
 | `task_label` | ✓ | — | list-only; the task label vocabulary |
 | `client_label` | ✓ | — | list-only; the client label vocabulary, separate from `task_label` |
+| `client_history` | ✓ | — | list-only, cursor-paged; the client history timeline: stage, label, reminder-assignee, program, check-in, form, purchase, invoice and email events, who did each, newest first |
+| `workout_session` | ✓ | — | list-only; requires `clientId`; what the client actually did per session, sets positional with `includeSets` |
+| `client_media` | ✓ | — | list-only; requires `clientId`; files the client sent (check-ins, forms, chat, nutrition logs, profile photo) as folders |
+| `habit` | ✓ | — | list-only; what a `HABIT_TRACKING` form can offer: the standard habits (`mapTo`) and the coach's own (`customHabitId`) |
+| `recent_exercise` | ✓ | — | list-only; the exercises this coach used most recently in their own workouts |
+| `product` | ✓ | — | list-only; the shop's products (price in minor units, access duration, programs granted) — what `manage_shop action=create_purchase` sells |
 
 Remember: on `get` you always pass the id as **`id`**, never as `clientId`/`programId`/etc. The
 right-hand column is what happens internally, not what you send.
@@ -305,6 +351,12 @@ A row with none of the three is **rejected**. The list you send becomes the enti
 If every row is rejected, the write is now refused and nothing is saved — the server returns an
 error naming the missing control key, and the existing content survives. Read the error and resend
 with control keys; do not create a second record.
+
+**Deleting existing rows needs `confirmDelete: true`.** A well-formed list that leaves out a week, a
+group, an exercise or a meal row deletes it, so all three verbs now **refuse** that write and list
+what would go (`weeksToDelete` / `rowsToDelete`). Show the coach; only on their yes, repeat the call
+with `confirmDelete: true`. Agent edits also leave a version in the entity's history, so a coach can
+restore one from the dashboard.
 
 A *partial* failure still applies, and the response carries `failCount` and `entries`. Check it: a
 plan that came back with `failCount: 2` is missing two rows you thought you wrote.
@@ -359,8 +411,8 @@ that file as `markdown`. Read-only. Call it before multi-step work you have no p
 
 ## Send tier
 
-`schedule` and `manage_automations` are the two verbs with an action gated to this tier; their full
-parameter and action detail lives in `surface-operations.md`, not here. `send` is opt-in: the coach
-must specifically choose it at consent, and the default is `write`, so do not assume this connection
-has it. See `guardrails.md` for exactly which three action calls on these two verbs need `send`, and
-what to do if a call to one of them is refused.
+`schedule`, `manage_automations` and `manage_shop` are the three verbs with an action gated to this
+tier; their full parameter and action detail lives in `surface-operations.md`, not here. `send` is
+opt-in: the coach must specifically choose it at consent, and the default is `write`, so do not
+assume this connection has it. See `guardrails.md` for exactly which four action calls on these
+verbs need `send`, and what to do if a call to one of them is refused.

@@ -21,8 +21,9 @@ actually need the operator.
    before the individual items - "518 active, mostly plateau warnings, three worth your morning" is
    the answer to "what needs me"; listing 25 rows is not. Only raise `insightLimit` when you are
    genuinely working the whole list.
-2. Read `message` for unread client conversations. This verb is **read-only**; it never sends
-   anything, so reading is free.
+2. Read `message` for unread client conversations (`action: "list"`, `unread: true`; narrow with
+   `labelNames`, `lifecycleStageId` or `reminderAssigneeId` the way the dashboard's inbox filters
+   do). Reading never sends anything, so it is free.
 3. Group what you find: needs a decision / needs a reply / can be cleared / can wait.
 4. Clear only what is genuinely noise, using `review_inbox` (`mark_read`, `dismiss_insight`,
    `mark_insight_read`) - and say what you cleared.
@@ -38,5 +39,7 @@ actually need the operator.
 
 - Never dismiss an insight the operator has not seen if it concerns a client's health or a payment.
   Surface those, do not clear them.
-- Reading messages is not replying. Protocol has no MCP verb that messages a client. Draft the reply and let the operator send it from Protocol.
+- Reading messages is not replying. Protocol has no MCP verb that messages a client. Draft the reply and let the operator send it from Protocol. What you can do is leave a
+  reply as a draft (`message action: "draft"`, needs `write`): it waits in that conversation's
+  composer for the coach to send, and never reaches the client. Say it is a draft; never say sent.
 - Say what you cleared, always. Silent triage is indistinguishable from losing things.

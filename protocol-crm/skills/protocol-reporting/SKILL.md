@@ -9,8 +9,8 @@ description: Use when the operator asks how a month went, which clients are prog
 also the easiest surface to narrate dishonestly, because sparse data and bad news look identical
 once they are summarised.
 
-Only `kind=training` produces verdicts. The other five hand you data: `checkin`, `body`,
-`nutrition`, `engagement`, `business`. Four of them deliberately withhold a headline you would
+Only `kind=training` produces verdicts. The other six hand you data: `checkin`, `body`,
+`nutrition`, `engagement`, `business`, `habits`. Four of them deliberately withhold a headline you would
 expect, because the underlying data cannot support it, and each says so in its own `notes`. Those
 refusals are the most important thing this skill has to teach, so they are listed first.
 
@@ -65,6 +65,11 @@ are computed over logged days only. A client who logged two 2,000 kcal days in a
 2,000 on the days they logged, and reporting that as a daily average across the month would put
 them at 133 kcal a day and read as a medical emergency.
 
+**A habit rate is a rate over logged days.** `kind=habits` reports `completionPct` as days marked
+done over days logged, the same figure the app shows. No habit carries a target or a schedule, so a
+day with no log is not a missed habit. "She logged water on 12 of 30 days and marked 11 of them
+done" is the honest sentence; "she hit her water habit 37% of the time" is not.
+
 Also: `kind=engagement` sees in-app messages only. Coaches use WhatsApp too, so silence there is not
 evidence of no contact, which is why response times are deliberately not computed. And every money
 figure in `kind=business` is in **cents**, keyed by currency. Divide by 100 before saying an amount
@@ -77,6 +82,11 @@ Start at `report kind=training subject=roster`. Scan for rows carrying flags: `n
 clientId=...` for the two or three that look wrong.
 
 Never loop `subject=client` across a roster. That is dozens of calls for something one call answers.
+
+The roster is every client the coach's account can reach: an owner or admin sees the whole team, a
+coach their own assignments. No parameter changes that, and an unknown parameter is refused with an
+error, so do not invent one such as `team`. A client outside the set comes back as "not on your
+roster", which does not mean the client does not exist.
 
 ## Sparsity is normal, and it is not bad news
 

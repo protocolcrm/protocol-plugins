@@ -117,8 +117,9 @@ to get approval, never as something that is stopping a bad call from happening.
 
 Four actions need the coach's explicit approval before you take them, exactly as in
 [`../protocol-reference/references/guardrails.md`](../protocol-reference/references/guardrails.md).
-These are policy on the MCP surface too, since there is simply no verb for messaging, billing,
-deleting, or generating at any tier - that absence has nothing to do with the tier system covered
+These are policy on the MCP surface too, since there is simply no verb for sending a message,
+charging or refunding, deleting, or generating at any tier (the surface can leave a message draft
+and record a sale or a payment received, nothing more) - that absence has nothing to do with the tier system covered
 above, which genuinely is enforced. The difference here is only that this key can also reach the
 underlying REST route directly, so the same wall-policy has to hold without even a narrower verb
 surface to lean on:

@@ -1,17 +1,18 @@
 # Protocol MCP surface - running the practice
 
-The calendar, the kanban, the media library, articles, the inbox, and automations - the operational
-half that is not about one client's programming. Assumes `surface-core.md`.
+The calendar, the kanban, the media library, articles, the inbox, automations and the shop's
+bookkeeping - the operational half that is not about one client's programming. Assumes
+`surface-core.md`.
 
 > **One of four.** The surface is split by the job you are doing, so you read the part you need
-> rather than all 22 verbs:
+> rather than all 23 verbs:
 >
 > | File | Verbs |
 > |---|---|
 > | `surface-core.md` | `find` · `get` · `report` · the kind table · the replace grammar · `report_to_developers` |
 > | `surface-programming.md` | `build_program` · `build_workout` · `build_nutrition` · `assign_program` · `manage_library` |
 > | `surface-clients.md` | `manage_client` · `record_progress` · `manage_forms` · `review_client` · `message` |
-> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` |
+> | `surface-operations.md` | `manage_tasks` · `manage_media` · `manage_content` · `schedule` · `manage_automations` · `review_inbox` · `manage_support` · `manage_shop` |
 
 
 ---
@@ -25,7 +26,8 @@ Required: `action`. 16 actions.
 `update_board` · `create_column` · `update_column` · `reorder_columns` · `create_label` ·
 `update_label`
 
-Everything except `action` is forwarded verbatim; pass the fields that action needs.
+Pass the fields that action needs. The per-action list is published on the `action` enum, and a
+field the action does not read is **refused** with that list, not ignored.
 
 | Param | Type | Typically used by |
 |---|---|---|
@@ -40,6 +42,9 @@ Everything except `action` is forwarded verbatim; pass the fields that action ne
 | `name` | string | boards / columns / labels |
 | `description` | string | tasks |
 | `dueAt` | string | tasks — `YYYY-MM-DD` |
+| `recurrenceInterval` | integer | create_task, update_task — repeat every N periods |
+| `recurrencePeriod` | string enum | create_task, update_task — `DAY` · `WEEK` · `MONTH` · `YEAR` |
+| `isPrivate` | boolean | create_task, update_task — visible only to the coach who created it |
 | `clientId` | string | tasks |
 | `assigneeId` | string | tasks / subtasks |
 | `isDone` | boolean | toggle_subtask |
@@ -67,10 +72,15 @@ late?"), `assigneeId` ("what's on Ana's plate?"), `labelIds`, `dueAfter`/`dueBef
 `columnId`, `boardId`, `isArchived` and a free-text `searchTerm` that also matches label names.
 
 **`title` names a task or subtask; `name` names a board, column or label.** Send the wrong one and
-it is silently dropped - the write returns success and nothing changes. `create_task` also needs a
-`boardId` or a `columnId`; a title alone is refused. The per-action parameter list is published on
-the `action` enum - read it rather than guessing, because anything an action does not read is
-dropped rather than rejected. `reorder_subtasks` / `reorder_columns` take the COMPLETE id list.
+the call is refused, naming the right one. `create_task` also needs a `boardId` or a `columnId`; a
+title alone is refused. `reorder_subtasks` / `reorder_columns` take the COMPLETE id list.
+
+**Recurring tasks.** `recurrenceInterval` + `recurrencePeriod` (8 + `WEEK` = every eight weeks) make
+completing the task create the next one, in the first column of its board, due N periods after this
+one's due date (or after today when it has none). Send both on create; on update either half may
+change alone once the task has a recurrence. Half a recurrence on a task with none is refused, since
+it would never fire. The write echoes `recurrenceInterval`, `recurrencePeriod` and `isPrivate`; check
+them. This surface cannot clear a recurrence once set; the coach does that in the dashboard.
 
 ---
 
@@ -110,14 +120,21 @@ all its existing ids plus the new one - otherwise you quietly unfile it from the
 
 ### `manage_content`
 
-Required: `action`. 6 actions. Articles are the coach's rich content pieces - a title, category,
+Required: `action`. 12 actions. Articles are the coach's rich content pieces - a title, category,
 cover, and a block body - that clients read in the app's Learn tab and inside programs. You write
 and read the body as **Markdown**; the platform stores structured content and renders it itself.
 
 | Param | Type | Notes |
 |---|---|---|
-| `action` | string enum | **Required.** `create_article` · `update_article` · `publish_article` · `unpublish_article` · `attach_to_program` · `create_audience` |
+| `action` | string enum | **Required.** `create_article` · `update_article` · `publish_article` · `unpublish_article` · `attach_to_program` · `duplicate_article` · `set_tags` · `share_article` · `delete_article` · `create_audience` · `update_audience` · `delete_audience` |
 | `articleId` | string | Every article action but `create_article`. |
+| `audienceId` | string | `update_audience`, `delete_audience`. |
+| `addTags` · `removeTags` | string[] | `set_tags`: tag **names**. Unknown names in `addTags` are created. The article vocabulary is separate from client labels. |
+| `folder` | string \| null | `set_tags`: a folder by name or id; `null` takes it out of its folder. An unknown folder is refused with the list of folders that exist (the coach creates folders in the dashboard). |
+| `revoke` | boolean | `share_article`: `true` takes the public link down; the old url stops working. |
+| `expiresAt` | string \| null | `share_article`: ISO date the link stops working; omit for no expiry. |
+| `embedEnabled` | boolean | `share_article`: allow the embed snippet on another site (default true). |
+| `confirm` | boolean | `delete_article`, `delete_audience`: must be `true` to delete. |
 | `title` | string | Required on create. The slug is derived from it once and does not follow later renames. |
 | `markdown` | string | The body. On `update_article` it **replaces the whole body** - read with `get kind=article` first. |
 | `category` | string | Free text. Reuse what `find kind=article` already shows rather than inventing a near-duplicate. |
@@ -125,7 +142,7 @@ and read the body as **Markdown**; the platform stores structured content and re
 | `coverMediaId` | string | A media id (image or video). |
 | `slug` | string | Optional override; made unique in the tenant. |
 | `audience` | object | `{ all: true }` or `{ audiences: [saved audience names or ids] }`; reaching any listed audience is enough. Default on create: everyone. |
-| `name` · `description` · `conditions` | | `create_audience`, see below. |
+| `name` · `description` · `conditions` | | `create_audience` / `update_audience`, see below. |
 | `programId` | string | `attach_to_program`. |
 | `collectionName` | string | `attach_to_program`: the program content collection to file it under; created if missing, default "Articles". |
 
@@ -161,8 +178,29 @@ and the saved audiences with `find kind=audience` (each with a live `memberCount
 article with `audience: { audiences: ["Onboarding + At risk"] }`.
 
 The response echoes `audience` in the friendly shape, `audienceAll` and `audienceIds` as stored,
-the body as `markdown`, and `unresolvedAudience` when a name did not match. An audience list that
-resolves to **nothing** is refused outright.
+`folderId`, `tags`, `publicShare`, the body as `markdown`, and `unresolvedAudience` when a name did
+not match. An audience list that resolves to **nothing** is refused outright.
+
+`update_audience` renames it, edits its description, or replaces its conditions (same grammar as
+create); every article aimed at it follows at once.
+
+**Organising the library.** `duplicate_article` copies an article into a new DRAFT of yours (same
+body, cover, folder, audience and tags; the title says "(copy)"); nothing is published. `set_tags`
+files and tags it. Tags and folders are the coach's organisation and clients never see them.
+
+**The public link.** `share_article` gives a **published** article a public url and an iframe
+`embedSnippet` for the coach's own website, returned under `publicShare`. A draft is refused:
+publishing is where the claims guardrail runs. Anyone holding the link can read the article -
+**the audience does not apply** - so say that to the coach. Nothing is sent to anyone: you hand the
+url to the coach and they decide where it goes. `unpublish_article` and `revoke: true` both take the
+link down. It is a `write`-tier action for that reason, the same as a public `manage_media` share.
+
+**Deleting is permanent and confirm-guarded.** `delete_article` and `delete_audience` remove the row
+with no trash and no undo. Without `confirm: true` they delete **nothing** and return an error
+carrying `confirmRequired: true` and `wouldDelete` (the article's title and status and its public
+link; or the audience and every article aimed at it, which then reach nobody through it). Show that
+to the coach and call again with `confirm: true` only on their explicit go-ahead (wall 3 in
+`guardrails.md`). To hide an article, `unpublish_article` it instead: that keeps it.
 
 ---
 
@@ -196,13 +234,14 @@ Required: `action`. 7 actions.
 | `appointmentId` | string | update, cancel, send_reminder | |
 | `title` | string | create, update, reminder | |
 | `startTime` | string | create, update, reminder | ISO-8601 instant. |
-| `endTime` | string | create, update | ISO-8601 instant. |
+| `endTime` | string | create, update, reminder | ISO-8601 instant. On `reminder` it is the end of the first response window: the same thing as `responseWindowHours`, so send either; a disagreement is refused. |
 | `clientId` | string | create, reminder | |
 | `type` | string | create, update | |
 | `modality` | string | create, update | |
 | `location` | string | create, update | |
 | `description` | string | create, update, reminder | |
 | `status` | string | update | |
+| `notifyParticipants` | boolean | create, update, cancel | Email every guest an invitation, update or cancellation with a calendar file. Needs a **send**-tier connection. |
 | `formId` | string | reminder | The check-in form the reminder asks for. |
 | `recurrenceRule` | string | reminder | |
 | `responseWindowHours` | number | reminder | |
@@ -248,8 +287,19 @@ rest. `maximumAdvanceDays` must be one of 7 / 14 / 30 / 60 / 90.
 `reminder` is not the plain write it looks like either: despite the name, it arms a recurring
 client push that fires within minutes if `startTime` is now or in the past, so treat it exactly
 like `send_reminder`, confirm with the coach before calling it. `create`, `update`, `cancel`,
-`booking_config`, and `gcal_disconnect` are the ones that are genuinely internal writes and reach
-nobody.
+`booking_config`, and `gcal_disconnect` are internal writes that reach nobody - **unless**
+`create` / `update` / `cancel` carry `notifyParticipants: true`.
+
+#### Telling the guests
+
+`notifyParticipants: true` on `create`, `update` or `cancel` emails every guest with an email
+address - the client included, never the coach - an invitation, an update or a cancellation, each
+with a calendar file keyed on the appointment, so the guest's own calendar adds, moves or removes
+the same event. On `update`, a guest hears only when something they see changed (time, title,
+location, link). Off by default: without it nobody is told. Because it reaches people outside the
+account, a call carrying it is held at the **send** tier: at `write` it is refused naming
+`notifyParticipants`, while the same call without the flag books, moves or cancels fine. Confirm
+with the coach before sending it. A client reminder never emails, whatever the flag says.
 
 ---
 
@@ -266,12 +316,17 @@ Required: `action`. 6 actions.
 | `config` | object | Kind-specific config. |
 | `triggerConfig` | object | Kind-specific trigger config. |
 | `triggerData` | object | `run`: kind-specific trigger payload. |
+| `schedule` | object \| null | `create`, `update`: run on a clock. See *Scheduled automations*. |
 
 `create` lands the automation in DRAFT. `run` **dispatches an execution now**: outward. Read a
 run's outcome with `find kind=automation_run` + `automationId`.
-There are two registered kinds: `PROGRESS_REPORT` (triggers `PROGRESS_ENTRY_CREATED` and
-`MANUAL`) and `FORM_REPORT` (triggers `FORM_SUBMITTED` and `MANUAL`); confirm with
-`find kind=automation_kind` before assuming another exists. `run` needs `triggerData` - for
+There are three kinds of automation. Two can be created here: `PROGRESS_REPORT` (triggers
+`PROGRESS_ENTRY_CREATED` and `MANUAL`) and `FORM_REPORT` (triggers `FORM_SUBMITTED` and `MANUAL`).
+The third, **CUSTOM** (`CUSTOM_WORKFLOW` / `CUSTOM_AI_STEP`), is a workflow Protocol built in n8n for
+one coach; it carries `readOnly: true`. You can read it and its runs with `find` / `get`, and every
+write to it (`update`, `activate`, `pause`, `archive`, `run`) is refused, as is creating one; changes
+go through Protocol (`report_to_developers`). Confirm with `find kind=automation_kind` before
+assuming another kind exists. `run` needs `triggerData` - for
 PROGRESS_REPORT that is `{ entryId: "<progress entry uuid>" }`, for FORM_REPORT that is
 `{ submissionId: "<form submission uuid>" }`. **`run` is the
 only outward action here, and it is the one held to the `send` tier** (see `guardrails.md`): if
@@ -282,6 +337,17 @@ connection is at `send`, confirm with the coach before calling it anyway: gettin
 wrong still dispatches a real, client-facing execution, so it costs more than a wasted call.
 Authoring (create/update/activate/pause/archive) is a plain write, at `write` tier. Read what an
 execution actually did with `find kind=automation_run`.
+
+#### Scheduled automations
+
+`schedule: { startAt, timezone, rrule }` makes an automation run on a clock instead of an event.
+`startAt` is a **wall clock** in `timezone`, written `2026-11-02T09:00` with no `Z` and no offset
+(an instant is refused, because the two read the same and mean different things an hour apart).
+`timezone` is an IANA zone (`Europe/Belgrade`); `rrule` is an iCal rule (`FREQ=WEEKLY;BYDAY=MO`), or
+`null` for a one-off. It is stored as `triggerConfig.schedule`; sending `schedule` alone on `update`
+keeps the rest of the stored `triggerConfig` (sending `triggerConfig` replaces it whole). `null`
+removes the schedule. A bad zone or rule is refused with the field named. The response echoes
+`schedule`.
 
 ---
 
@@ -316,3 +382,47 @@ a tenant sees every ticket filed in that tenant, and every other member sees onl
 personally filed. Nobody but Protocol crosses a tenant boundary. The `status` / `area` / `tenantId` /
 `query` filters on `find` only do anything for a Protocol (ADMIN/SYSTEM) caller — a coach's list
 ignores them rather than erroring.
+
+---
+
+### `manage_shop`
+
+Required: `action`. 2 actions, **tiered per action**: `record_payment` is `write`,
+`create_purchase` is `send`.
+
+| Param | Type | Action | Notes |
+|---|---|---|---|
+| `action` | string enum | — | **Required.** `create_purchase` · `record_payment` |
+| `clientId` | string | create_purchase | **Required.** The client buying. Must be one this coach may reach. |
+| `productId` | string | create_purchase | The product sold (`find kind=product`). Price, currency, programs granted and access duration default from it. |
+| `name` | string | create_purchase | Required when there is no product (a one-off). |
+| `amount` | number | both | **Minor units** (15000 = 150.00). `create_purchase`: defaults to the product price. `record_payment`: defaults to the invoice's whole outstanding balance; less is a partial payment. |
+| `currency` | string | create_purchase | e.g. `eur`. Defaults to the product's, then the shop's. |
+| `status` | string | create_purchase | `ACTIVE` (default: paid or started) or `PENDING` (awaiting payment). |
+| `purchasedAt` / `expiresAt` | string | create_purchase | ISO dates. `expiresAt` defaults to the product's access duration. |
+| `paymentSchedule` | string | create_purchase | `PAID_IN_FULL` (default) or `INSTALLMENTS`. |
+| `installments` | object[] | create_purchase | `INSTALLMENTS` only: `[{ dueDate, amount, paid? }]`, at least two, summing to the total (including any exclusive tax). `paid: true` marks one already received, e.g. the first, taken up front. |
+| `purchaseId` | string | record_payment | The purchase; the earliest invoice still owed is used. |
+| `invoiceId` | string | record_payment | One specific installment invoice instead. |
+| `date` / `note` | string | record_payment | When it was received (default now), and e.g. "bank transfer, ref 1234". |
+
+This is bookkeeping, the dashboard's **Add purchase** and **Mark as paid**. **Nothing here charges a
+card, refunds, or sends an invoice or receipt** - those stay in the dashboard, behind wall 2 in
+`guardrails.md`.
+
+**`create_purchase` bills a client, which is why it is `send`.** The purchase appears in the
+client's app; an installment plan arms the payment reminders that email or push the client as each
+installment comes due, and a time-limited purchase arms the access-expiry reminders (both only when
+the coach has switched reminders on); and an `ACTIVE` purchase notifies the coach's own connected
+integrations, which on some accounts message the client. Confirm the client, product, amount and
+schedule with the coach before calling it. A wrong purchase can only be removed in the dashboard.
+
+**`record_payment` reaches nobody**, so it is `write`: it writes the payment into the invoice's
+ledger (status `PARTIALLY_PAID` or `PAID`) and the client's history (`invoice.paid`), and can only
+stop a reminder from going out. It refuses more than is owed, a voided invoice, and a purchase with
+nothing owed (a `PENDING` paid-in-full purchase has no invoice yet). There is no un-record on this
+surface, so record only what the coach says was received.
+
+Read purchases with `find kind=purchase` - filter with `installmentState` (`OVERDUE` /
+`DUE_SOON` / `ON_TRACK` / `FULLY_PAID`) for collections and with `expiresBefore` /
+`expiresWithinDays` for renewals - and `get kind=purchase` for one in full.

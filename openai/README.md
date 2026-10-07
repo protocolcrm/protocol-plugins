@@ -37,7 +37,7 @@ One package with two parts, and you want both:
 Protocol is not in the directory yet, so early coaches install the same plugin from a file.
 
 1. Download the Protocol plugin file (a `.zip`) from
-   [help.protocolcrm.com/ai-agent/chatgpt](https://help.protocolcrm.com/ai-agent/chatgpt). Keep it
+   [help.protocolcrm.com/ai-agent-chatgpt](https://help.protocolcrm.com/ai-agent-chatgpt). Keep it
    zipped; do not unzip it.
 2. Go to [chatgpt.com/plugins](https://chatgpt.com/plugins).
 3. Choose **Add**, then **Upload plugin archive**, and pick the file you downloaded.
@@ -117,4 +117,4 @@ don't take it, reconnect at the level you actually need instead.
 
 ## Learn more
 
-[https://help.protocolcrm.com/ai-agent/chatgpt](https://help.protocolcrm.com/ai-agent/chatgpt)
+[https://help.protocolcrm.com/ai-agent-chatgpt](https://help.protocolcrm.com/ai-agent-chatgpt)

@@ -90,7 +90,8 @@ then reference them by id. Full grammar: `../protocol-reference/references/surfa
   `../protocol-reference/references/guardrails.md`, under House style.
 - `items` replaces the item tree. Read, merge, write the whole thing - every row needs one control
   key (`add` / `ref` / `modify`), and a row you omit is deleted. Keep untouched rows with
-  `{ ref: "<id>" }`.
+  `{ ref: "<id>" }`. A write that would delete rows is refused with the rows listed; repeat it with
+  `confirmDelete: true` only after the coach agrees.
 - **Check `failCount` before you tell the operator it is done.** Rows the server cannot parse are
   skipped and the call still succeeds; `failCount: 3` means three foods are missing from the plan you
   are about to describe. If the whole write is refused, retry with the `templateId` you were handed -

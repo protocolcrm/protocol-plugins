@@ -46,8 +46,12 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
 - **Editing a live program? `get` it first and keep every week you are not changing.** `phases`
   replaces the ENTIRE phase list, and each row needs one control key: `{ add: true, name: "Week 1" }`
   to create, `{ ref: "<phaseId>" }` to keep a week untouched, `{ modify: "<phaseId>", … }` to change
-  one. A week you omit is deleted. Note `add` is a **boolean** here - in `build_nutrition` it names
-  the row type instead. Full grammar: `../protocol-reference/references/surface-programming.md`.
+  one. A week you omit is deleted, so such a write is refused with the weeks listed: show the coach
+  and repeat with `confirmDelete: true` only on their yes. Note `add` is a **boolean** here - in
+  `build_nutrition` it names the row type instead. Full grammar:
+  `../protocol-reference/references/surface-programming.md`.
+- **A replaced block is expired, not paused.** When a new mesocycle takes over, end the old one with
+  `assign_program action=expire` (EXPIRED, ends today); `deactivate` means "on hold".
 - `exercises` **replaces** the whole exercise list on a workout - and so does a group's own nested
   `exercises` array. Changing one movement in a superset means sending that group's complete list
   with `{ ref: <exerciseId> }` for the ones you are keeping. Read the current list, merge, write it

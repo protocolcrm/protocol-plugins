@@ -6,19 +6,26 @@ Failure modes on this surface, worst first.
 
 ## 1. Parameter-name fidelity — the one that will actually bite you
 
-**A wrong parameter key is not an error. It is silently dropped, and the call still returns
-success.**
+**A top-level parameter the verb does not take is refused, not ignored.** Since 2026-10-07 every
+call is checked before it runs: a key the verb does not declare, or (on `manage_tasks`,
+`record_progress`, `schedule`, `manage_content`, `manage_automations`) a key the chosen `action` does
+not read, returns an error naming the key, the arguments that action does take, and the right
+spelling when yours was a near miss (`form_id` → `formId`). **Nothing is written when it fires.** A
+key sent as `null` counts as not sent.
 
-Every verb reshapes your input and forwards it to an internal layer that reads only the keys it was
-built for. A key it doesn't recognize is ignored. Nothing validates that the field you sent
-survived the trip. So:
+Read that error and resend; do not drop the field and declare success, because the field is usually
+the thing the coach asked for. Before this check, the same mistakes returned success and did
+nothing: a task "set to repeat every 8 weeks" never repeated, `find kind=program userId=…` returned
+every program in the account, `update_task name=…` renamed nothing.
+
+What the check cannot see is **inside** an object or array parameter (a workout tree, a nutrition
+row, a profile patch, `triggerConfig`). There a wrong key can still be dropped silently:
 
 > A plausible-looking, well-typed call can return HTTP 200 with no error while quietly doing less
 > than you asked — sometimes far less. **Data loss looks exactly like success.**
 
-This is the single highest-risk thing about operating Protocol. Treat parameter names as exact
-strings copied from the surface files, never as things to guess, pluralize, or "correct" to whatever
-seems more natural.
+Treat parameter names as exact strings copied from the surface files, never as things to guess,
+pluralize, or "correct" to whatever seems more natural.
 
 ### Known concrete examples
 
@@ -69,6 +76,11 @@ These parameters overwrite the entire collection with what you send. Anything yo
 **Always `get` the entity first**, merge your change into the existing array, and send the complete
 result. Sending "just the new question" deletes every other question on the form — successfully,
 with no warning.
+
+The three plan trees (`phases`, `exercises`, `items`) now refuse a write that would delete existing
+rows unless it carries `confirmDelete: true`, and list what would go. That flag is the coach's
+answer, not yours: ask first. `manage_forms.questions` and `build_program.content` still replace
+without asking.
 
 The same holds at the storage layer: these are unvalidated jsonb blobs. Exactly what you send is
 what is stored. A field renamed or nested one level wrong is not an error; it's simply absent on
@@ -163,18 +175,25 @@ verbatim:
 
 ---
 
-## 8. Action-specific fields are dropped by the other actions
+## 8. Action-specific fields belong to their action
 
-Multi-action verbs read only the fields that action uses:
+Multi-action verbs read only the fields that action uses, and refuse the rest (section 1):
 
-- `record_progress action=report` with `reportAction: approve` or `discard` **ignores the edit
+- `record_progress action=report` with `reportAction: approve` or `discard` **refuses the edit
   fields** (`clientFacingSummary`, `sections`, …). To change *and* approve, call
   `reportAction: update` first, then approve as a second call.
 - `record_progress action=entry` splits by path: create reads `clientId` / `entryDate` /
   `measurements` / `userNotes` / `trainerNotes` / `internalNotes`; update reads `progressEntryId` /
-  `status` / `trainerNotes` / `internalNotes` / `labels`. Fields from the other path vanish.
+  `status` / `trainerNotes` / `internalNotes` / `labels`. A field from the other path is refused.
+- `schedule action=update` does not change a series' recurrence: `recurrenceRule` is read only by
+  `action=reminder`, and is refused on update rather than ignored.
 - `build_nutrition.metadata` honors only `name` / `description` / `tags` / `templateMode`. Other
   keys in the patch are dropped by design.
+- `build_program.metadata` is the opposite: a key outside its list (or `status`) is **refused**, and
+  the error names the allowed keys. Status changes go through `assign_program`
+  (`activate` / `deactivate` / `expire`).
+- Names arrive at the server HTML-escaped from some agent clients (`&` as `&amp;`). The program,
+  workout and nutrition verbs decode `name` fields on input, so write the plain character.
 - `manage_media action=update_share` cannot change `shareType`. Recreate the share to re-type it.
 - `manage_content` bodies are Markdown, and **media inside them is referenced by id**:
   `![caption](media:<mediaId>)`, never a URL. An external image URL is imported as its alt text,
@@ -214,7 +233,7 @@ preserved-on-purpose behavior, not an error to route around.
 If a verb can't express what the coach asked, the answer is **not** to find a lower-level route
 around it. Two legitimate moves:
 
-1. Do it a different way within the 22 verbs.
+1. Do it a different way within the 23 verbs.
 2. Tell the coach plainly what you couldn't do and offer `report_to_developers`.
 
 **Exception: a tier refusal or a tier-filtered absent verb is neither of these.** If a verb exists

@@ -77,9 +77,9 @@ These parameters overwrite the entire collection with what you send. Anything yo
 result. Sending "just the new question" deletes every other question on the form — successfully,
 with no warning.
 
-The three plan trees (`phases`, `exercises`, `items`) now refuse a write that would delete existing
-rows unless it carries `confirmDelete: true`, and list what would go. That flag is the coach's
-answer, not yours: ask first. `manage_forms.questions` and `build_program.content` still replace
+The three plan trees (`phases`, `exercises`, `items`) and `build_program.content` now refuse a
+write that would delete existing rows unless it carries `confirmDelete: true`, and list what would
+go. That flag is the coach's answer, not yours: ask first. `manage_forms.questions` still replaces
 without asking.
 
 The same holds at the storage layer: these are unvalidated jsonb blobs. Exactly what you send is
@@ -106,14 +106,18 @@ existed, a superset silently went from two exercises to zero and the call report
 
 ---
 
-## 3. Filters that don't apply just no-op
+## 3. Filters that don't apply are refused
 
-`find`'s `status` / `isTemplate` / `clientId` / etc. are forwarded to whichever list surface the
-`kind` maps to, and that surface ignores any filter it doesn't support. Passing `status` against a
-kind that can't filter by status returns the **unfiltered** list, with no warning.
+This used to be true and no longer is, for `find`: since ECS-1751 a filter the chosen `kind` does
+not read is **refused** with the list of filters that kind does take. `find kind=report clientId=…`
+had been returning the tenant's newest reports, and `find kind=nutrition clientId=…` the whole
+template library, each looking exactly like a filtered answer.
 
-Don't trust that a result set was narrowed. If the count looks suspiciously like "everything",
-it probably is — filter client-side or narrow by a filter you know that kind supports.
+What still holds: a filter that IS read narrows by the kind's own meaning of it, which is not always
+the one you assume. `clientId` on `kind=nutrition` means the plans assigned to that client (their
+own copies), not the library templates they were made from; on `kind=appointment` it means every
+appointment they take part in, reminders included. If a count looks suspiciously like
+"everything", read the kind's row notes in `surface-core.md` before trusting it.
 
 ---
 
@@ -198,6 +202,9 @@ Multi-action verbs read only the fields that action uses, and refuse the rest (s
 - `manage_content` bodies are Markdown, and **media inside them is referenced by id**:
   `![caption](media:<mediaId>)`, never a URL. An external image URL is imported as its alt text,
   not as an image; attach the file with `manage_media action=attach` first, then embed its id.
+- A program content item's `description` is a **300-character plain-text subtitle**, not a body.
+  Pasting Markdown there shows the client raw `##` and `|` characters, and `build_program` now
+  refuses it. Put the text in an article and attach the article.
 - `manage_content action=update_article` with `markdown` **replaces the whole body**. Read it with
   `get kind=article` first and send the edited text back, or a one-line fix deletes the article.
 - `manage_content action=publish_article` runs the claims guardrail over the coach's own words. A

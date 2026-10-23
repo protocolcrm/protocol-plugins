@@ -70,8 +70,17 @@ content: { collections: [ { name: "JELOVNIK", type: "recipes", items: [
       { type: "NUTRITION_TEMPLATE", nutritionTemplateId: "<recipe>" } ] } ] } ] }
 ```
 
-The recipes themselves are still nutrition templates - create them with `build_nutrition` first,
-then reference them by id. Full grammar: `../protocol-reference/references/surface-programming.md`.
+For a NEW menu, the recipes can be nutrition templates - create them with `build_nutrition` first,
+then reference them by id.
+
+**Editing an existing menu** is different: most real menu options are text only, a
+`NUTRITION_TEMPLATE` item whose `nutritionTemplate` snapshot has `id: null`, no rows, and the recipe
+in its `description`. There is nothing to reference and nothing for `build_nutrition` to edit. Read
+the program with `get kind=program`, change the option's text inside `contentCollections`, and send
+ALL of it back as `build_program` `content.collections`, keeping every `id`: only what you changed
+is written. Leaving anything out is refused with `contentToDelete` until the coach confirms
+(`confirmDelete: true`). Do not swap a text option for a `nutritionTemplateId`: that replaces its
+recipe with the library version. Full grammar: `../protocol-reference/references/surface-programming.md`.
 
 ## Rules
 

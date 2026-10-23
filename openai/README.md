@@ -85,11 +85,12 @@ is what actually gates what ChatGPT can do to your account, not anything in this
 - **Read and write** is the default, and it's right for most coaches. It covers everything on
   the list above: reviewing clients, building and assigning programs, nutrition, scheduling,
   and your inbox.
-- **Send** is opt-in, on top of read and write. It exists for exactly three actions, all of them
-  reaching a real client: firing an appointment reminder right now, arming a recurring reminder
-  (which can fire within minutes if its start time is already due), and running an automation on
-  demand. Pick this level only if you want the assistant able to trigger one of those three
-  without you doing it yourself.
+- **Send** is opt-in, on top of read and write. It exists for the actions that reach a real
+  client: sending a chat message or poll as you (checked against the wellness claims rule first),
+  firing an appointment reminder right now, arming a recurring reminder (which can fire within
+  minutes if its start time is already due), running an automation on demand, and recording a
+  sale to a client. Pick this level only if you want the assistant able to do one of those when
+  you ask, without you doing it yourself.
 
 ## An absent action is normal, not a bug
 
@@ -108,8 +109,9 @@ don't take it, reconnect at the level you actually need instead.
 
 ## What it will not do without asking you
 
-- **Message or chat with your clients.** It can read conversations, but sending is always your
-  call, it drafts a message and lets you send or approve it.
+- **Message or chat with your clients.** It can read conversations and draft a reply for you to
+  send. On a connection at the send access level it can also send a message or a poll when you ask
+  it to; it goes out as your own message, and it is checked against the wellness claims rule first.
 - **Touch billing.** No charges, refunds, subscriptions, or invoices.
 - **Permanently delete anything.** It prefers a reversible action, like cancel or archive.
 - **Trigger Protocol's own AI generation.** It's the AI operating your account already, it

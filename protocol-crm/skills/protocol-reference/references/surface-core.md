@@ -27,11 +27,12 @@ the coach chose one of them at consent when they installed, and `write` is the d
 is two-layered: the tool list itself is tier-filtered (a `read` connection's `listTools` never
 includes the write verbs at all - they are **absent**, not refused), and a call above the
 connection's tier is also refused at call time, as defense-in-depth. See `guardrails.md` for the
-full model and what to do about either. Every verb in this file needs at most `write` tier
+full model and what to do about either. Every verb in this file lists at `read` or `write`
 (`find`/`get`/`review_client`/`report`/`message`/`guide` are `read`; `report_to_developers` is `write`) -
 so if the coach chose `read` only, `report_to_developers` itself will simply be absent from your
-tool list, not denied when you try to call it. (`message` lists at `read`, but its one write,
-`action=draft`, needs `write`.)
+tool list, not denied when you try to call it. (`message` lists at `read`, but `action=draft`
+and `action=clear_draft` need `write`, and `action=send` and `action=poll`, which reach a client,
+need `send`.)
 
 ## Verb index
 
@@ -41,7 +42,7 @@ tool list, not denied when you try to call it. (`message` lists at `read`, but i
 | `get` | read | Fetch one entity by id, full detail. |
 | `review_client` | read | One-call full picture of a single client. |
 | `report` | read | Aggregate a window of history into a report. Six kinds: `training` gives verdicts, the other five give structured data with no judgement attached. Several report explicitly what they cannot compute. |
-| `message` | read* | Read the inbox and conversations; `action=draft` leaves a draft for the coach (write). Never sends. |
+| `message` | read* | Read the inbox and conversations; `action=draft` leaves a draft for the coach and `action=clear_draft` removes one (write); `action=send` / `action=poll` send a message or poll as the coach (send, claims-checked). |
 | `guide` | read | These playbooks and reference files, served by the server itself. |
 | `manage_client` | write | Create/update a client, its stage, trainer, access tier, and 4 profiles. |
 | `build_program` | write | Create/edit a program's structure (metadata, phases, content). |
@@ -69,7 +70,8 @@ now), `schedule action=reminder` (arms a recurring push), `manage_automations ac
 (dispatches an execution whose post-actions can email or WhatsApp), and `manage_shop
 action=create_purchase` (bills the client: it shows in their app and arms payment and expiry
 reminders). `message` works the other way round: it lists at `read` so a read-only connection keeps
-the inbox, and its one write, `action=draft`, needs `write`. If this connection is below the tier
+the inbox, `action=draft` needs `write`, and `action=send` and `action=poll`, which put text in a
+client's chat, need `send`. If this connection is below the tier
 an action needs, the call is refused by the platform with a `PermissionDeniedError` naming the tier
 - tell the coach plainly and stop, per `guardrails.md`. Never treat that refusal as a reason to
 fall back to `protocol-rest-escape`.
@@ -86,25 +88,28 @@ Required: `kind`.
 
 | Param | Type | Notes |
 |---|---|---|
-| `kind` | string | **Required.** One of the 34 kinds below. |
+| `kind` | string | **Required.** One of the 35 kinds below. |
 | `query` | string | Free-text search (where the kind supports it). |
-| `clientId` | string | Filter to one client (where supported). |
+| `clientId` | string | Filter to one client: their programs, workouts, **assigned** nutrition plans (never the library), appointments (check-in reminders included), check-ins, reports, purchases, tasks, and the client-record kinds. |
 | `formId` | string | `kind=submission`. |
 | `isTemplate` | boolean | Templates vs client-assigned (program / workout / nutrition). |
 | `scope` | string | **Whose library.** `mine` (yours, unshared), `team` (shared with the team), `all` (default). Applies to `kind=workout` / `nutrition` / `program` / `exercise` / `media`. |
-| `status` | string | Status filter (where supported). |
+| `status` | string | Status filter (where supported). `kind=progress` takes a comma list of `PENDING`, `PROCESSING`, `DONE`, `CONFIRMED`: `PENDING,PROCESSING` is the open queue. `kind=task` takes `OPEN` or `COMPLETED` (either case), the value task rows carry. |
+| `assigneeId` | string | `kind=task`: tasks owned by this coach. `kind=progress`: check-ins whose review is assigned to this coach. Coach ids come from `find kind=team_member`. |
+| `type` | string | `kind=media`: `IMAGE`/`VIDEO`/`AUDIO`/`FILE`/`DOCUMENT`. `kind=progress`: `REMINDER` (answered a check-in reminder), `AD_HOC` (logged unprompted), `COACH` (recorded by the coach). A `COACH` entry carrying the intake `formId` is the **intake questionnaire, not a check-in**. |
 | `limit` | number | Result cap. |
+| `offset` | number | Skip this many (paged kinds, see *Paging* below). |
 | `muscleGroup` | string | `kind=exercise` — primary muscle group (e.g. CHEST, BACK, THIGHS). |
 | `exerciseType` | string | `kind=exercise` — STRENGTH, CARDIO, FLEXIBILITY, … |
 | `difficultyLevel` | string | `kind=exercise` — BEGINNER … ELITE. |
 | `isCompound` | boolean | `kind=exercise` — compound (true) vs isolation (false). |
 | `automationId` | string | `kind=automation_run` — **required for that kind**. |
 | `specialPurpose` | string | `kind=submission` — CHECK_IN, INITIAL_QUESTIONNAIRE, SURVEY, OTHER. |
-| `labelNames` | string[] | `kind=client` — clients carrying these labels, **by name**. Enumerate them with `find kind=client_label`. A name that matches no label returns **nobody**, not everybody. |
+| `labelNames` | string[] | `kind=client` — clients carrying these labels, **by name**, ignoring case, accents and spacing (`ceka odgovor` matches `Čeka odgovor`). Enumerate them with `find kind=client_label`. A name that matches no label is an **error** naming it, with close spellings in `unknownLabels[].didYouMean`, the same as `message action=list`; nothing is filtered. |
 | `labelMatch` | string | `kind=client` — `any` (default) carries at least one of `labelNames`; `all` carries every one. Use `all` for a segment like VIP *and* marathon-prep. |
-| `from` / `to` | string | `kind=appointment` / `health_metric` / `client_history` / `workout_session` — the window, `YYYY-MM-DD` or ISO-8601; a bare `to` date includes that whole day. |
-| `types` | string[] | `kind=client_history` — only these event types (`stage.changed`, `label.added`, `label.removed`, `reminder.assignee_changed`, `program.assigned`, `program.status_changed`, `checkin.submitted`, `form.submitted`, `purchase.created`, `purchase.status_changed`, `purchase.renewed`, `invoice.paid`, `email.sent`, `email.failed`, …). An unknown type is refused with the valid list. |
-| `order` | string | `kind=client_history` — `desc` (default, newest first) or `asc`. |
+| `from` / `to` | string | `kind=appointment` / `health_metric` / `client_history` / `workout_session` — the window, `YYYY-MM-DD` or ISO-8601; a bare `to` date includes that whole day. `kind=purchase` — the **purchase** date, not the expiry. |
+| `types` | string[] | `kind=client_history` — only these event types (`stage.changed`, `label.added`, `label.removed`, `reminder.assignee_changed`, `program.assigned`, `program.status_changed`, `checkin.submitted`, `checkin.reminder_sent`, `form.submitted`, `purchase.created`, `purchase.status_changed`, `purchase.renewed`, `invoice.paid`, `email.sent`, `email.failed`, …). An unknown type is refused with the valid list. |
+| `order` | string | `kind=client_history` / `appointment` — `desc` (default, newest first) or `asc`. For "the next appointments" pass `from` = now and `order: "asc"`. |
 | `cursor` | string | `kind=client_history` — the `nextCursor` of the previous page. This kind pages by cursor, **not** `offset`. |
 | `includeSets` | boolean | `kind=workout_session` — every exercise and set (see *What the client actually did* in `surface-clients.md`). |
 | `folder` | string | `kind=client_media` — a folder key from the tree (`checkins`, `checkins/2026-09`, `forms/<formId>`, `chat/2026-09`, `nutrition/2026-09`, `profile`); omit for the tree. |
@@ -113,11 +118,29 @@ Required: `kind`.
 | `variants` | string | `kind=exercise` — `all` lists every gender/version variant of a public exercise (default: one row each). |
 | `includeArchived` | boolean | `kind=habit` — also the coach's retired custom habits. |
 | `installmentState` | string | `kind=purchase` — installment plans that are `OVERDUE`, `DUE_SOON`, `ON_TRACK` or `FULLY_PAID`. |
-| `expiresBefore` / `expiresWithinDays` | string / number | `kind=purchase` — access ends on or before a date, or within the next N days: the renewal list. |
+| `expiresAfter` / `expiresBefore` / `expiresWithinDays` | string / string / number | `kind=purchase` — access ends on or after / on or before a date, or within the next N days: the renewal list. Any expiry filter sorts **soonest expiry first**. |
 | `unread` / `hasDraft` / `reminderAssigneeId` | boolean / boolean / string | `kind=conversation` — the inbox filters (also on `message action=list`, with `labelNames` and `lifecycleStageId`). |
 
-Filters that a given kind's underlying list doesn't support are **ignored silently** — you get the
-unfiltered list, not an error.
+**A filter the chosen kind does not support is refused, not ignored.** `find kind=lifecycle_stage
+clientId=…` fails with an error naming `clientId` and listing the filters that kind does take, so a
+result can never look filtered when it is not. (Until ECS-1751 these were dropped silently, which is
+how `find kind=report clientId=…` returned the tenant's newest reports as if they were the
+client's.) `limit` is a filter too: kinds that always come back whole (`lifecycle_stage`,
+`automation_kind`, `audience`, `habit`, `health_metric`, `team_member`) refuse it.
+
+**Rows worth knowing.** `kind=client` with a `query`: the search is fuzzy, so every row carries
+`exactMatch` (`true` when the full name equals the query, ignoring case and accents); pick the
+exact one rather than the first. `kind=report` rows carry `clientId`, `subjectType`, `subjectId`
+and `progressEntryId`. `kind=progress` rows carry the client's `clientId` and `clientName`, `formId`/`formName` and `assigneeIds`.
+`kind=program` rows carry `startDate`, `endDate`, `currentWeek` and `totalWeeks`. `kind=purchase`
+rows carry `purchasedAt` (the sale date: `createdAt` when none was recorded) and `expiresAt`, newest
+sale first by that same date. `kind=appointment` rows carry `type` (`CLIENT_REMINDER`
+is a check-in reminder, not a session) and `isRecurring`; a recurring series comes back as one row
+per occurrence inside the window, all with the series id. With no `from`/`to` the window is
+everything up to **60 days ahead** (past one-offs included), so pass `to` for anything booked
+further out. `kind=team_member` lists the coaches (id, name,
+`teamPermissions`, `isOwner`, `isSelf`, no emails or other contact details); any coach on the team
+may list it, whatever their team permission, and a client account is refused.
 
 **Whose shelf.** The library has two: what this coach owns and hasn't shared, and what the team
 has shared. Rows come back carrying their own `visibility` (`PRIVATE` / `TEAM`), so you can always
@@ -139,6 +162,14 @@ Required: `kind`, `id`.
 | `kind` | string | **Required.** One of the 19 `get` kinds below. |
 | `id` | string (uuid) | **Required.** The entity id. `get` maps it onto the right id param for you. |
 
+`get kind=client` returns the client (with `lifecycleStage` `{ id, name }` and its current `labels`)
+and its `profiles` (`health`, `fitness`, `nutrition`, `behavioral`). For programs, check-ins,
+appointments and tasks as well, use `review_client`.
+
+`get kind=report` takes a **report** id. Given a check-in (progress entry) id instead, it fails
+with an error saying so and naming the reports drafted from that check-in (`reports[].reportId`);
+`find kind=report progressEntryId=<id>` lists them too.
+
 ---
 
 ### `report` — aggregate a window of history
@@ -150,12 +181,13 @@ Required: `kind`.
 | `kind` | string | **Required.** One of the report kinds below. |
 | `subject` | string | `roster` \| `client`. Defaults to `client` when `clientId` is set, else `roster`. |
 | `clientId` | string | Required when `subject=client`. |
-| `from` / `to` | string | Window bounds, `YYYY-MM-DD`. `to` defaults to today; `from` defaults to 30 days before `to`. |
+| `from` / `to` | string | Window bounds, `YYYY-MM-DD`. `to` defaults to today; `from` defaults to 30 days before `to`, except `kind=checkin` with `entriesCount` and no `from`/`to`, which returns the last N check-ins whatever their date. The response `window` is always the window actually covered. |
 | `compareToPrevious` | boolean | `kind=training` only: echoes a `previousWindow` block of reference dates. Default `true`. **No delta against it is computed** anywhere in the response, for ANY kind, so never narrate one. Every other kind reports `previousWindow` as null. `kind=checkin` does compute `deltaFromBaseline`, but that is measured against the client's first entry on record, not bounded by the window and not a preceding window; `kind=body` computes a delta across the window it was given. |
 | `limit` / `offset` | number | Roster paging (max ~200 rows per page). |
-| `entriesCount` | number | `kind=checkin`: how many entries to return. Default 6, max 20. |
-| `messagesCount` | number | `kind=checkin`: how many recent messages. Default 20, max 50, `0` to omit. |
-| `priorReportsCount` | number | `kind=checkin`: how many of the coach's previous reports. Default 2, max 5, `0` to omit. |
+| `includeInactive` | boolean | `subject=roster`: cover inactive (deactivated) clients too. `kind=checkin` / `engagement` (who to chase) default to `false`: active clients only, with `coverage.inactiveClientsExcluded`. Every other kind defaults to `true`, so a past month's `business` revenue still counts a client deactivated since; `false` leaves them out. |
+| `entriesCount` | number | `kind=checkin`: how many entries to return, newest first. Default 6, max 20. Without `from`/`to`, the last N whatever their date. Intake-questionnaire entries are never counted as check-ins (`coverage.intakeEntriesExcluded`). |
+| `messagesCount` | number | `kind=checkin`: how many recent messages (`recentMessages`). Default 20, max 50, `0` to omit. Only the client's own conversations (1:1 threads, and team threads with no other client in them); posts in a group or broadcast holding other clients are never included, so an `outbound` message was sent to this client alone. |
+| `priorReportsCount` | number | `kind=checkin`: how many of the coach's previous reports. Default 2, max 5, `0` to omit. A report on the latest check-in comes first with `current: true` and does not count against it. |
 | `includeIntake` | boolean | `kind=checkin`: include the initial questionnaire. Default `true`. |
 | `includeProfile` | boolean | `kind=checkin`: include the client profile snapshot. Default `true`. |
 | `seriesPoints` | number | `kind=body`: daily points per metric. Default 30, max 90, `0` to omit the series. |
@@ -193,7 +225,7 @@ Report kinds:
 | kind | legacy tool | what it aggregates |
 |---|---|---|
 | `training` | `report_training` | Session counts and volume load, a prescribed-progression audit, and per-exercise progression verdicts (`progressing` / `flat` / `regressing` / `data_anomaly`). |
-| `checkin` | `report_checkin` | The client's check-in history as structured data: entries, measurement series against their first entry on record, questions grouped into dated answer series, cadence, and (on `subject=client`) intake, profile, recent messages and the coach's prior reports. **No verdicts.** Nothing scores the answers, because they are free text a coach wrote, often not in English. Read them and draw the conclusion out loud yourself. |
+| `checkin` | `report_checkin` | The client's check-in history as structured data: entries, measurement series against their first entry on record, questions grouped into dated answer series, cadence, and (on `subject=client`) intake, profile, recent messages and the coach's prior reports. `daysSinceLast` (and `overdue`) count to today, or to the window end when you pass a `to` in the past, and a note says so. **No verdicts.** Nothing scores the answers, because they are free text a coach wrote, often not in English. Read them and draw the conclusion out loud yourself. |
 | `body` | `report_body` | Device and lab health metrics: one series per metric with `first`/`last`/`delta`/`min`/`max`/`mean`, the canonical `unit` and `category`, the contributing `sources`, and an `optimalRange`. **No verdicts, no clinical assessment.** |
 | `nutrition` | `report_nutrition` | What the client logged eating: a daily series, means over the days they logged, a macro split, and how many of the window's days carry a log at all. **No adherence.** |
 | `engagement` | `report_engagement` | In-app messages by direction, contact recency, longest silence, active conversations, and appointments **booked**, with reminder records counted separately. **No attendance.** |
@@ -228,6 +260,11 @@ Two more traps specific to these kinds:
   over logged days only.
 - **`kind=engagement` sees in-app messages only.** Coaches also use WhatsApp, so silence here is not
   evidence of no contact, and response times are deliberately not computed.
+- **`kind=engagement` counts personal contact, not everything the team sent.** `messagesFromClient`
+  is what the client sent, anywhere; `messagesFromCoach` is what anyone else sent in conversations
+  where that client is the only client (their 1:1, a team chat with no other client). A group or
+  broadcast post reaching several clients is on nobody's row, so a roster sum of `messagesFromCoach`
+  is personal coach messages, not the team's total output.
 - **`kind=business` money is in cents and keyed by currency.** Divide by 100 before saying an amount
   to a person, and never add figures across currencies.
 - **`kind=habits`: `completionPct` is over the days a habit was LOGGED.** A day with no log is a day
@@ -269,8 +306,9 @@ A paged response tells you where you stand:
 
 **Loop while `nextOffset` comes back**, passing it as the next `offset`. `total` is the real count,
 so "86 check-ins, I read all 86" is a statement you can make honestly. Paged today: `progress`,
-`task`, `appointment`, `workout_session`, `client_media` (files in a folder), plus the kinds that
-already had it (`client`, `form`, `automation`, `media`, `report`, `submission`, `automation_run`).
+`task`, `appointment`, `workout_session`, `client_media` (files in a folder), `purchase` (up to 200
+a page), plus the kinds that already had it (`client`, `form`, `automation`, `media`, `report`,
+`submission`, `automation_run`).
 `habit`, `product` and `recent_exercise` come back whole, with a `total`.
 
 **`client_history` pages by cursor instead.** The response carries `hasMore` and `nextCursor`; pass
@@ -286,7 +324,7 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 
 ### `find` / `get` kind table
 
-34 `find` kinds; `get` covers a 19-kind subset. The 15 list-only kinds have **no by-id fetch**.
+35 `find` kinds; `get` covers a 19-kind subset. The 16 list-only kinds have **no by-id fetch**.
 
 | kind | `find` | `get` | id param used internally |
 |---|---|---|---|
@@ -323,6 +361,7 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 | `client_media` | ✓ | — | list-only; requires `clientId`; files the client sent (check-ins, forms, chat, nutrition logs, profile photo) as folders |
 | `habit` | ✓ | — | list-only; what a `HABIT_TRACKING` form can offer: the standard habits (`mapTo`) and the coach's own (`customHabitId`) |
 | `recent_exercise` | ✓ | — | list-only; the exercises this coach used most recently in their own workouts |
+| `team_member` | ✓ | — | list-only; the tenant's coaches (id, name, `teamPermissions`, `isOwner`, `isSelf`), for every field that takes a coach id; any coach, no contact fields; reads `query` |
 | `product` | ✓ | — | list-only; the shop's products (price in minor units, access duration, programs granted) — what `manage_shop action=create_purchase` sells |
 
 Remember: on `get` you always pass the id as **`id`**, never as `clientId`/`programId`/etc. The

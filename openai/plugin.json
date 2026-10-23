@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "protocol-crm",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Operate your Protocol CRM by conversation: clients, programs, nutrition, check-ins, scheduling, and inbox triage.",
   "author": {
     "name": "Protocol",
@@ -15,7 +15,7 @@
       "interface": {
         "displayName": "Protocol CRM",
         "shortDescription": "Run your coaching CRM by chat",
-        "longDescription": "Protocol CRM lets coaches who use Protocol run their account by conversation. Review a client before a session, run a weekly check-in, onboard a new client, build and assign training programs and nutrition plans, manage appointments, and triage your inbox and tasks.\n\nYou need an existing Protocol coach account. When you connect, you sign in to Protocol and choose an access level: read only, read and write (the default), or send, which also allows the three actions that reach a client directly: sending an appointment reminder now, arming a recurring reminder, and running an automation on demand.\n\nIt does not message your clients for you, touch billing, permanently delete records, or start Protocol's own AI generation. When a client should hear from you, it drafts the message and you send it. Protocol is a coaching and wellness tool, not a medical one.",
+        "longDescription": "Protocol CRM lets coaches who use Protocol run their account by conversation. Review a client before a session, run a weekly check-in, onboard a new client, build and assign training programs and nutrition plans, manage appointments, and triage your inbox and tasks.\n\nYou need an existing Protocol coach account. When you connect, you sign in to Protocol and choose an access level: read only, read and write (the default), or send, which also allows the actions that reach a client directly: sending a chat message or poll as you, sending an appointment reminder now, arming a recurring reminder, running an automation on demand, and recording a sale to a client.\n\nBelow the send level it does not message your clients: it drafts the message and you send it. At the send level it sends a message only when you ask, checked against the wellness claims rule first. It does not touch billing, permanently delete records, or start Protocol's own AI generation. Protocol is a coaching and wellness tool, not a medical one.",
         "developerName": "Protocol",
         "category": "Business & Operations",
         "capabilities": ["Read", "Write"],

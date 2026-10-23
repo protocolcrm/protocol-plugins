@@ -19,9 +19,9 @@ bookkeeping - the operational half that is not about one client's programming. A
 
 ### `manage_tasks`
 
-Required: `action`. 16 actions.
+Required: `action`. 17 actions.
 
-`create_task` · `update_task` · `complete_task` · `move_task` · `archive_completed` ·
+`create_task` · `update_task` · `complete_task` · `delete_task` · `move_task` · `archive_completed` ·
 `create_subtask` · `update_subtask` · `toggle_subtask` · `reorder_subtasks` · `create_board` ·
 `update_board` · `create_column` · `update_column` · `reorder_columns` · `create_label` ·
 `update_label`
@@ -32,6 +32,7 @@ field the action does not read is **refused** with that list, not ignored.
 | Param | Type | Typically used by |
 |---|---|---|
 | `taskId` | string | task + subtask actions |
+| `confirm` | boolean | delete_task — must be `true` to delete, only after the coach said so |
 | `subtaskId` | string | update_subtask, toggle_subtask |
 | `subtaskIds` | string[] | reorder_subtasks |
 | `boardId` | string | board + column actions |
@@ -41,7 +42,7 @@ field the action does not read is **refused** with that list, not ignored.
 | `title` | string | tasks / subtasks |
 | `name` | string | boards / columns / labels |
 | `description` | string | tasks |
-| `dueAt` | string | tasks — `YYYY-MM-DD` |
+| `dueAt` | string | tasks — `YYYY-MM-DD`. Every task read returns it under the same name (`get kind=task` also keeps `dueDate`). |
 | `recurrenceInterval` | integer | create_task, update_task — repeat every N periods |
 | `recurrencePeriod` | string enum | create_task, update_task — `DAY` · `WEEK` · `MONTH` · `YEAR` |
 | `isPrivate` | boolean | create_task, update_task — visible only to the coach who created it |
@@ -56,7 +57,15 @@ field the action does not read is **refused** with that list, not ignored.
 | `isArchived` | boolean | boards |
 | `defaultColumns` | string[] | create_board |
 
-Task/board reads go through `find` (`kind=task`, `kind=board`) and `get`.
+**`delete_task` is permanent** (the task, its subtasks and its labels on it; no undo). It is here so
+you can take back a task you created by mistake. Without `confirm: true` it deletes nothing and
+returns `wouldDelete`: show the coach, and call again with `confirm: true` only on their go-ahead. To
+take a task off the board and keep it, `complete_task` instead. A task you cannot see, in another
+tenant or an unknown id, is refused as not found.
+
+Task/board reads go through `find` (`kind=task`, `kind=board`) and `get`. Every task read and write
+reports `status` as `OPEN` or `COMPLETED` (derived from `completedAt`, which `find kind=task` rows
+and `get kind=task` also return), and `find kind=task status=` takes either value, in either case.
 
 **Labels.** `create_label` makes one (name + color, both required); `find kind=task_label` lists
 them; `labelIds` on create_task/update_task puts them ON a task, replacing whatever was there. Ids
@@ -169,11 +178,18 @@ the program is its own audience: a client on that program can open the article e
 audience rules do not match them - once it is published. `build_program content` also accepts
 `{ type: 'ARTICLE', articleId }` items when you rebuild a whole content section.
 
+**Long text goes in an article, never in an item `description`.** A content item's `description`
+is a plain-text subtitle under its title (at most 300 characters, shown without formatting).
+`build_program content` refuses a longer one and saves nothing. When a coach wants a guide,
+a shopping list with links or anything with headings or a table in a plan, write it with
+`create_article`, publish it, and `attach_to_program`; the client taps the card and reads it.
+
 **Audiences are saved and reused.** An audience is a named segment of clients: `create_audience`
 with `name` and `conditions`, where conditions **AND** together and each condition matches **any**
 of its `values` (names or ids): `[{ type: "lifecycleStages", values: ["Onboarding"] }, { type:
 "labels", values: ["At risk"] }]` is "Onboarding + At risk"; two `labels` conditions is "Overweight
-+ Churn risk". Enumerate the vocabulary with `find kind=lifecycle_stage` and `find kind=client_label`,
++ Churn risk". Stage and label names match ignoring case, accents and spacing ("ceka odgovor" finds
+"Čeka odgovor"). Enumerate the vocabulary with `find kind=lifecycle_stage` and `find kind=client_label`,
 and the saved audiences with `find kind=audience` (each with a live `memberCount`). Then aim an
 article with `audience: { audiences: ["Onboarding + At risk"] }`.
 
@@ -216,7 +232,8 @@ No required param — `action` defaults to `overview`. 5 actions.
 | `insightLimit` | number | `overview`: how many insights (default 25, max 200), highest priority first. |
 
 `overview` returns `{ dashboard, notifications, unreadCount, insights, insightsTotal,
-insightBreakdown }`, each section null-safe. **`insights` is the top 25, not all of them** - a real
+insightBreakdown }`, each section null-safe. `unreadCount` is a number (the coach's unread
+notifications), or `null` when that read failed. **`insights` is the top 25, not all of them** - a real
 account had 518. `insightsTotal` and `insightBreakdown` (counts by type and severity) describe the
 whole set, so describe the pile honestly - "518 active, mostly plateau warnings, here are the 25
 that matter" - rather than reporting 25 as if it were everything. Raise `insightLimit` only when

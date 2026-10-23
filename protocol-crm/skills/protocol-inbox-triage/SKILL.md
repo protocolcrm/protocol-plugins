@@ -39,8 +39,10 @@ actually need the operator.
 
 - Never dismiss an insight the operator has not seen if it concerns a client's health or a payment.
   Surface those, do not clear them.
-- Reading messages is not replying. Protocol has no MCP verb that messages a client - see
-  `../protocol-rest-escape` for why, and what it costs to do it anyway. What you can do is leave a
-  reply as a draft (`message action: "draft"`, needs `write`): it waits in that conversation's
-  composer for the coach to send, and never reaches the client. Say it is a draft; never say sent.
+- Reading messages is not replying. Triage leaves replies as drafts (`message action: "draft"`,
+  needs `write`): a draft waits in that conversation's composer for the coach to send, and never
+  reaches the client. Say it is a draft; never say sent. Sending (`message action: "send"`) needs a
+  `send` connection and the coach asking for that exact reply; never send from triage on your own
+  judgement, and never route around a refused send - see `../protocol-rest-escape` for what it
+  costs to do it anyway.
 - Say what you cleared, always. Silent triage is indistinguishable from losing things.

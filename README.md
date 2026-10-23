@@ -42,9 +42,10 @@ The first time you ask Claude to do something in Protocol, it opens a sign-in sc
 `api.protocolcrm.com`. Sign in and approve the connection, the same way you'd approve any app
 asking for calendar or email access, and you're connected. As part of approving, you also pick an
 access level: **Read & write** is the default and right for most coaches; pick **Send** only if
-you also want Claude to be able to reach a client on its own. Three actions need that level:
-firing an appointment reminder now, arming a recurring one (which fires within minutes if its
-start time is now or past), and running an automation on demand. There's no password or API key to copy for
+you also want Claude to be able to reach a client on its own. The actions that need that level:
+sending a chat message or poll as you (checked against the wellness claims rule first), firing an
+appointment reminder now, arming a recurring one (which fires within minutes if its start time is
+now or past), running an automation on demand, and recording a sale to a client. There's no password or API key to copy for
 normal, everyday use.
 
 ## Turn on auto-update
@@ -124,7 +125,7 @@ Full instructions, including the access levels, are in [`openai/README.md`](./op
 
 Whichever assistant you use, what it can do to your account is decided by the access level you
 pick when you sign in, not by anything in this repo. Read and write is the default. Send is
-opt-in and covers only the three actions above that reach a client directly.
+opt-in and covers only the actions above that reach a client directly.
 
 At the read level, the write actions are not refused, they are simply absent from the
 assistant's list of what it can do. If you ask for a program build on a read-only connection, the
@@ -134,8 +135,9 @@ level at all, it is full account access, and using one defeats the only control 
 
 ## What it will not do without asking you
 
-- **Message or chat with your clients.** It can read conversations, but sending is always your
-  call, it drafts a message and lets you send or approve it.
+- **Message or chat with your clients.** It can read conversations and draft a reply for you to
+  send. On a connection at the send access level it can also send a message or a poll when you ask
+  it to; it goes out as your own message, and it is checked against the wellness claims rule first.
 - **Touch billing.** No charges, refunds, subscriptions, or invoices.
 - **Permanently delete anything.** It prefers a reversible action, like cancel or archive.
 - **Trigger Protocol's own AI generation.** It's the AI operating your account already, it

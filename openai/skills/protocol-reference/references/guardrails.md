@@ -9,7 +9,7 @@ Four actions are off-limits **without the coach's explicit approval**:
 
 | # | Wall | What it means in practice |
 |---|---|---|
-| 1 | **Don't message or chat with clients** | Reading conversations is fine, and so is leaving a draft (`message action=draft`), which never reaches the client. *Sending* is never yours: the coach sends it. |
+| 1 | **Don't message clients without a send-tier key and the coach's ask** | Reading conversations is fine, and so is leaving a draft (`message action=draft`), which never reaches the client. Sending (`message action=send` / `action=poll`) needs a `send` connection **and** the coach asking for that message or confirming its text: it goes out at once as the coach's own message, with no AI label. Without both, draft it and let the coach send it. |
 | 2 | **Don't touch billing** | Charges, refunds, subscriptions, invoices, checkout. The one exception is bookkeeping the coach asks for by name - `manage_shop` records a sale or a payment received, and never charges, refunds or sends an invoice; confirm each call with the coach. |
 | 3 | **Don't hard-delete** | Prefer the reversible path — cancel, archive, deactivate, unpublish. If only a destructive route exists, stop and ask. |
 | 4 | **Don't invoke Protocol's own AI generation** | *You* are the AI operating this account. Turning around and firing Protocol's own generation is the coach's call. |
@@ -17,19 +17,21 @@ Four actions are off-limits **without the coach's explicit approval**:
 ### These are POLICY, not tool-absence
 
 This is the part that matters. The MCP verb surface happens to be narrower than the platform: it
-exposes no send-message verb (`message` can only leave a draft), no charge or refund verb
-(`manage_shop` is bookkeeping only), no generate verb, at any tier, and only two deletes
-(`manage_content` `delete_article` / `delete_audience`), which delete nothing without
-`confirm: true`. **Do
-not mistake that for enforcement of the four walls themselves** - there is no wall-shaped tool to
-gate in the first place, so a tier system has nothing to hold back here. Whether you are operating through this connection's chosen tier or any other route, the platform will
-not stop you from messaging a client, issuing a refund, hard-deleting a record, or triggering
-generation, because **specifically for these four things** there is no route at any tier that a
-scope check could intercept, unlike `schedule action=send_reminder`, `schedule action=reminder`,
-`manage_automations action=run` and `manage_shop action=create_purchase` below, which the platform
-genuinely does intercept at the `send` tier. Do not read this section as evidence that a refusal on
-one of those four is anomalous - it is a completely different mechanism from the four walls covered
-here.
+exposes no charge or refund verb (`manage_shop` is bookkeeping only), no generate verb, at any tier,
+and only three deletes (`manage_content` `delete_article` / `delete_audience`, `manage_tasks`
+`delete_task`), which delete nothing without `confirm: true`. **Do not mistake that for enforcement of the walls themselves** - for
+walls 2 to 4 there is no wall-shaped tool to gate in the first place, so a tier system has nothing
+to hold back. Whether you are operating through this connection's chosen tier or any other route, the platform will not stop you from issuing a refund, hard-deleting a
+record, or triggering generation, because **specifically for these three things** there is no
+route at any tier that a scope check could intercept.
+
+Wall 1 is the one with a real route: `message action=send` and `action=poll` send a client a
+message or a poll, and the platform intercepts them at the `send` tier, exactly like
+`schedule action=send_reminder`, `schedule action=reminder`, `manage_automations action=run` and
+`manage_shop action=create_purchase` below. The tier is the coach's consent to the *capability*; it
+is not their approval of a particular message. A `send` connection can send anything, so the wall
+still holds only because you send what the coach asked for or confirmed, and nothing else. Do not
+read a `send`-tier refusal as anomalous either - it is the platform's half of the same rule.
 
 So these four walls hold only because *you follow them and the coach approves*. Two failure modes,
 both worse than refusing:
@@ -56,17 +58,17 @@ the coach's own choice at that screen counts. The dropdown defaults to `write`. 
 | Tier | Rank | Can call |
 |---|---|---|
 | `read` | 0 | `find` · `get` · `review_client` · `report` · `message` (listing and reading) · `guide`, never mutates anything. |
-| `write` | 1 | The above **plus** `message action=draft` · `manage_client` · `build_program` · `assign_program` · `build_workout` · `build_nutrition` · `record_progress` · `manage_library` · `manage_forms` · `manage_tasks` · `manage_media` · `manage_content` · `manage_support` · `manage_shop` · `review_inbox` · `report_to_developers` · `schedule` · `manage_automations`. |
-| `send` | 2 | Everything above, **plus** four specific actions held back from `write` (`schedule action=send_reminder`, `schedule action=reminder`, `manage_automations action=run`, `manage_shop action=create_purchase`) and three flags that make an ordinary write reach someone (`schedule notifyParticipants: true`, `record_progress notifyClient: true`, `manage_client create.sendAccessInstructions: true`). |
+| `write` | 1 | The above **plus** `message action=draft` / `action=clear_draft` · `manage_client` · `build_program` · `assign_program` · `build_workout` · `build_nutrition` · `record_progress` · `manage_library` · `manage_forms` · `manage_tasks` · `manage_media` · `manage_content` · `manage_support` · `manage_shop` · `review_inbox` · `report_to_developers` · `schedule` · `manage_automations`. |
+| `send` | 2 | Everything above, **plus** six specific actions held back from `write` (`message action=send`, `message action=poll`, `schedule action=send_reminder`, `schedule action=reminder`, `manage_automations action=run`, `manage_shop action=create_purchase`) and three flags that make an ordinary write reach someone (`schedule notifyParticipants: true`, `record_progress notifyClient: true`, `manage_client create.sendAccessInstructions: true`). |
 
 **`schedule`, `manage_automations` and `manage_shop` themselves sit at `write`.** Booking, moving,
 or cancelling an appointment, reading or writing booking config, disconnecting a calendar, authoring
 an automation (create/update/activate/pause/archive) and recording a payment received all work at
-`write`, the coach's default. Do not read "`schedule` requires `send`" into this - only the four
+`write`, the coach's default. Do not read "`schedule` requires `send`" into this - only the
 actions named below are held to a higher tier, and treating the whole verb as gated would make you
 abandon booking and cancelling work that a `write` connection can do just fine. `message` is the
-mirror case: it lists at `read`, so a read-only connection keeps the inbox, and only its
-`action=draft` needs `write`.
+mirror case: it lists at `read`, so a read-only connection keeps the inbox; its `action=draft` needs
+`write`, and its `action=send` and `action=poll` need `send`.
 
 This is genuinely enforced by the platform, not by you, in **two layers**:
 
@@ -92,7 +94,8 @@ a broken installation or a product gap - it is the tier doing exactly what the c
 Two shapes of the same thing, both expected, neither a bug:
 
 - **A call comes back `PermissionDeniedError`** naming a tier this connection does not have. A
-  `write` connection hits this calling one of the four `send` actions above, and a `read`
+  `write` connection hits this calling one of the six `send` actions above (`message action=send`
+  among them, where the right move is to draft the message instead), and a `read`
   connection calling `message action=draft` - but the same error can also fire for any write verb
   called on a `read` connection, since the call-time check is defense-in-depth on top of the list
   filter, not limited to those.
@@ -119,8 +122,14 @@ Either way:
 ### The outward actions and flags
 
 `send` is the only tier that adds anything beyond `write`, and it exists for the surface's outward
-paths to a real person: four actions, and three flags on otherwise-internal writes. The four
+paths to a real person: six actions, and three flags on otherwise-internal writes. The six
 actions:
+
+- `message` with `action: "send"`: sends `content` into a client conversation now, as the coach's
+  own message. It pushes to the client's phone and carries no AI label. Claims-checked: flagged
+  text is refused and nothing is sent.
+- `message` with `action: "poll"`: sends a poll (question and 2-12 options) into a conversation
+  now, the same way. The question and every option are claims-checked.
 
 - `schedule` with `action: "send_reminder"`: fires a client appointment reminder now.
 - `schedule` with `action: "reminder"`: despite the name, this is not a passive setting. It arms
@@ -152,12 +161,17 @@ connection; never abandon the booking itself.
 If this connection is at `send`, all of these succeed at the platform level, and nothing downstream
 catches a mistake once you call one. Confirm what will be sent or billed, and to whom, before you
 make any of these calls, per walls 1 and 2 above: platform enforcement of the tier is not a
-substitute for the coach's approval on a specific message or sale.
+substitute for the coach's approval on a specific message or sale. A sent message cannot be taken
+back from this surface.
 
 **Drafts are not on this list, on purpose.** `message action=draft` puts text in the coach's
-composer and nothing else: no notification, no delivery, nothing the client can see. It is the
-right way to prepare a reply - draft it, tell the coach it is waiting in that conversation, and let
-them send it. Never describe a draft as sent.
+composer and nothing else: no notification, no delivery, nothing the client can see. It needs only
+`write`, and it is still the right call whenever the coach has not asked you to send or wants to
+read the text first - draft it, tell the coach it is waiting in that conversation, and let them
+send it. Use `message action=send` only for text the coach asked you to send or confirmed. Never
+describe a draft as sent. `message action=clear_draft` takes a draft back out of the composer (it
+returns the removed text, but any attachments on the draft are lost); it touches nothing the client
+saw.
 
 Every other `write` verb stays inside Protocol, with two exceptions that reach the client without
 notifying them: `record_progress action=report reportAction=approve` (and `approve_many`) publishes
@@ -197,8 +211,9 @@ produced the `list_task_labels` mismatch.
 
 - **Writes hit the live database directly.** There is no draft queue and no "apply" step. When a
   call succeeds, it has already happened, live, in the coach's account.
-- **Two actions permanently delete, and both are confirm-guarded.** `manage_content`
-  `delete_article` and `delete_audience` delete nothing without `confirm: true`; the first call
+- **Three actions permanently delete, and all are confirm-guarded.** `manage_content`
+  `delete_article` / `delete_audience` and `manage_tasks` `delete_task` (there so you can take back a
+  task you created by mistake) delete nothing without `confirm: true`; the first call
   returns `wouldDelete` instead. Show that to the coach, and send `confirm: true` only on their
   explicit go-ahead for that item. Never send `confirm: true` on the first call. Nothing else on the
   surface hard-deletes; wall 3 governs any other route you might reach.

@@ -29,6 +29,15 @@ Returns one object: `client`, `profiles`, `programs`, `nutrition`, `recentProgre
 is null-safe — a section that fails comes back `null` rather than failing the whole call. Prefer
 this over ten separate `find` calls.
 
+- **`client.client`** carries `lifecycleStage` as `{ id, name }` and the client's current `labels`
+  (`[{ id, name }]`), so neither needs a second lookup.
+- **`programs`** rows carry `startDate`, `endDate`, `currentWeek` and `totalWeeks`.
+- **`nutrition`** is the plans **assigned to this client** (their own copies), never the tenant
+  library. An empty list means nothing is assigned, not that the read failed.
+- **`upcomingAppointments`** is the next five from now, soonest first, up to 60 days ahead, the
+  client's check-in reminders (`type: CLIENT_REMINDER`) included. For more, or further out, use
+  `find kind=appointment clientId=… from=<now> order=asc` (and `to`).
+
 - **`trackingSummary`** is the client record's tracking rail: `checkins`, `workouts`,
   `nutritionLogs`, `labs` and `formSubmissions` over the last **90 days**, `biometricsDaysSince`
   (days since the latest wearable/health reading, `null` = never), and `habitCompletionPct` over
@@ -63,37 +72,83 @@ confirmed - not done. `confirmedVia` says how it was confirmed (`tap`, `edit`, `
 
 ---
 
-### `message` — the inbox, and drafts for the coach to send
+### `message` — the inbox, drafts, and sending as the coach
 
-No required params. 3 actions; the verb lists at `read`, and `action=draft` needs `write`.
+No required params. 6 actions; the verb lists at `read`, `action=draft` and `action=clear_draft`
+need `write`, and `action=send` and `action=poll` need `send`.
 
 | Param | Type | Notes |
 |---|---|---|
-| `action` | string enum | `list` · `read` · `draft`. Omit it to list, or to read when `conversationId` is given. |
-| `conversationId` | string | `read` / `draft`: the conversation. |
+| `action` | string enum | `list` · `read` · `draft` · `clear_draft` · `send` · `poll`. Omit it to list, or to read when `conversationId` is given. |
+| `conversationId` | string | `read` / `draft` / `clear_draft` / `send` / `poll`: the conversation. |
 | `clientId` | string | `list`: only conversations with this client. |
 | `unread` | boolean | `list`: only conversations with unread messages. |
 | `hasDraft` | boolean | `list`: only conversations holding an unsent draft. |
-| `labelNames` | string[] | `list`: clients carrying **any** of these client labels, by name (`find kind=client_label`). A name that matches no label returns nobody. |
+| `labelNames` | string[] | `list`: 1:1 conversations whose client carries **any** of these client labels, by name, ignoring case, accents and spacing (`ceka odgovor` matches `Čeka odgovor`; `find kind=client_label` lists them). A name that is no label is an **error** naming it, with close spellings in `unknownLabels[].didYouMean` (`cekaa odgovor` suggests `Čeka odgovor`). A label that exists but nobody carries returns an empty list. |
 | `lifecycleStageId` | string | `list`: clients at this pipeline stage. |
 | `reminderAssigneeId` | string | `list`: clients with a live reminder assigned to this coach (a user id). |
-| `content` | string | `draft`: the message text, as the coach would send it. |
+| `activeSince` | string | `list`: only conversations whose last activity is strictly after this ISO 8601 date or date-time (`2026-10-20`, `2026-10-20T08:00:00+02:00`). An unreadable value is an error, never "no filter". |
+| `offset` | number | `list`: rows to skip; pass the previous page's `nextOffset`. |
+| `page` | number | `read`: which page of messages, counted back from the newest: `1` (default) is the newest `limit`, `2` the ones before them. Pass the previous read's `nextPage`. |
+| `content` | string | `draft` / `send`: the message text, as the coach would send it. |
 | `overwrite` | boolean | `draft`: replace an existing, different draft. |
-| `limit` | number | Result cap. |
+| `question` | string | `poll`: the question, 1-300 characters. |
+| `options` | string[] | `poll`: 2-12 answers, each 1-100 characters, unique ignoring case. |
+| `allowMultiple` | boolean | `poll`: let each person pick more than one answer. Default `false`. |
+| `closesAt` | string | `poll`: ISO 8601 time the poll closes, with an explicit offset or Z (`2026-10-20T18:00:00+02:00`, `2026-10-20T16:00:00Z`), 1 minute to 365 days ahead. A time with no offset, or a non-string, is refused. Omit to leave it open until the coach closes it. |
+| `limit` | number | `list`: conversations per page (default 25, **max 100**; a larger ask returns `limitCappedTo: 100`). `read`: messages per page (default 25, max 100). |
 
-`list` rows carry the last-message preview, the coach's own `draft` preview if one is open, and
-`client` (the client's stage and labels - coach-internal, never shown to the client).
+`list` returns `conversations`, `total` (every match, not just this page), `hasMore`, and
+`nextOffset` while there is more. Each row carries:
+
+- `type`: `DIRECT` is the 1:1 with one client; `GROUP` (members post) and `INFO` (announcement
+  group, staff post) reach many clients. `isDirect` is `type === "DIRECT"`. Groups have a `title`.
+- `participantCount`, and `participantIds` only for conversations of up to 10 people. The
+  all-clients broadcast group lists its count, never its members.
+- `lastActivityAt`, and `lastMessage` (`preview`, `sentAt`, `unreadCount`, `senderId`,
+  `fromClient`: true when a client wrote it, so "did the client write last" is one field; null
+  when the sender is unknown).
+- `draft` (`preview`, `updatedByName`, `updatedAt`) if one is open. The draft is shared by the
+  owner and admins, so `updatedByName` says who last typed it.
+- on a 1:1, `client`: `id` and `name`, plus their `lifecycleStage` and `labels` (coach-internal, never shown
+  to the client). A group never has one, and the label, stage and assignee filters only ever
+  return 1:1s.
+
+To find a client's 1:1, list with `clientId` and take the row with `isDirect: true`.
+
+`read` returns `messages` (one page of `limit`, oldest first; page 1 is the newest), each with `senderId`, `senderName`,
+`senderRole` (`CLIENT`, `TRAINER`, `ADMIN`) and `fromClient`, and `authorId` when an admin replied
+as the owner; plus `unreadCount` for the coach's inbox and `draft`, the text already waiting in the
+composer (`null` if none). Check `draft` before you write one. Reading marks nothing as read.
+The page is told by `page`, `total` (every message in the conversation) and `hasMore`; while older
+messages remain, `nextPage` is the page to pass for the next ones back, so a long thread is walked
+`page=1, 2, 3...` until `hasMore` is false.
 
 **`action=draft` saves the text into that conversation's composer and sends nothing.** The coach
 sees "Draft: ..." in their inbox and sends it, edits it, or deletes it. It never reaches the client.
 A conversation holds one draft for the coach's messaging identity (shared by the owner and admins),
 so if one is already there with different text the call is refused and returns `existingDraft`:
 fold it into yours, or ask the coach, before you pass `overwrite: true`. An empty `content` is
-refused rather than clearing the draft. The claims rule binds a draft exactly as it binds anything
-else you write (`guardrails.md`).
+refused rather than clearing the draft: **`action=clear_draft`** is how you remove one (a draft you
+left on the wrong client, or one the coach asks you to drop). It deletes nothing the client ever
+saw, returns `cleared` and the removed text as `removedDraft` so the text can be put back with
+`action=draft`, and is a no-op (`cleared: false`) when there was none. Attachments on the draft are
+**lost** (`action=draft` takes text only; `removedDraft.attachmentCount` says how many there were),
+so clear a draft that has attachments only when the coach agrees. The claims rule binds a draft
+exactly as it binds anything else you write (`guardrails.md`).
 
-**There is still no send path on this verb, or anywhere on the surface.** Sending a client message
-is the coach's act (see `guardrails.md`).
+**`action=send` and `action=poll` reach the client immediately, as the coach's own message.** The
+message lands in the conversation and pushes to the client's phone the moment you call it; there is
+no undo from this surface. It carries no AI label: to the client it is a message from the coach,
+exactly as if they had typed it, so only send text the coach asked for or confirmed, and when the
+coach wants to review it first, `draft` instead. Both need a `send` connection (a `write` connection
+is refused with a `PermissionDeniedError`), and both are claims-checked before anything is written:
+flagged text (the message, or a poll's question or any option) is refused with `flagged`, the
+phrases and why, and nothing is sent. Reword and send again; never work around it. A successful call
+returns `sent: true`, `messageId` and `message` (`id`, `conversationId`, `sentAt`), plus `poll` (the
+live card, with counts) for a poll. A conversation you are not in, or an announcement group you
+cannot post to, comes back as an error. Never say a message was sent unless the call returned
+`sent: true` (see wall 1 in `guardrails.md`).
 
 ---
 
@@ -123,8 +178,8 @@ No schema-level required params, but you must pass either `clientId` **or** `cre
 | `nutritionProfile` | object | Partial patch: `primaryDietType`, `nutritionGoals`, `preferredMealFrequency`, `foodPreferences`, `cuisinePreferences`, `dietaryRestrictions`, `previousDietSuccess`, `dietChallenges`, `nutritionRelatedHealthConcerns`, `notes`, `coachNotes`. |
 | `behavioralProfile` | object | Partial patch: `motivationFactors`, `adherenceRate` (1-5), `consistencyScore` (1-5), the `preferredCommunication*` fields, `preferredFeedbackStyles`, `responsesToChallenges`, `behavioralTriggers`, `notes`, `coachNotes`. |
 | `lifecycleStage` | object | Manages the tenant's **stage list itself**: `{ action: "create"\|"update"\|"reorder", ... }`. |
-| `addLabels` | string[] | Label **names** to attach. A name that does not exist yet is created, so there is no need to look one up first. |
-| `removeLabels` | string[] | Label **names** to detach. Unknown names are ignored. |
+| `addLabels` | string[] | Label **names** to attach. A name matching an existing label ignoring case, accents and spacing reuses it (`ceka odgovor` attaches `Čeka odgovor`); any other name is created, so there is no need to look one up first. |
+| `removeLabels` | string[] | Label **names** to detach, matched the same way. Unknown names are ignored. |
 
 `lifecycleStageId` moves one client. `lifecycleStage` edits the pipeline columns for the whole
 tenant. They are not the same thing.
@@ -136,10 +191,18 @@ girths are not profile fields, they are a dated check-in, `record_progress actio
 `measurements {"weightKg":84,"bodyFatPercentage":16}`, which is what the charts and reports read.
 Age is not stored either; set `healthProfile.dateOfBirth`, and ask the coach for it when you only
 know the age. Never fall back to writing these into `notes` or `coachNotes`. The response carries
-the client with all four profiles, so you can check what landed.
+the client with all four profiles, so you can check what landed. A profile field you leave out is
+kept; one you send as `null` is cleared (`[]` also empties a list), so `dietaryRestrictions: null`
+removes every restriction. This is the same rule the REST profile PUTs follow, so never send a field
+as `null` to mean "unchanged": leave it out. (Medical conditions are not editable through
+`manage_client`; on the REST API `medicalConditions: null` removes every condition row.) Each restriction is `{ food, isAllergy, severity, alternatives? }`, and
+`severity` is the coach form's whole number **1-5** (1 a mild preference, 5 must never appear in a
+plan; the form starts a new one at 3). Any other severity is refused and the whole call writes
+nothing.
 
 `addLabels` creates on demand, which is convenient and also means a typo silently becomes a new
-label rather than failing. Enumerate the existing vocabulary with `find kind=client_label` before
+label rather than failing (a missing accent does not: label names ignore case, accents and
+spacing everywhere, so `Ceka` can never sit beside `Čeka`). Enumerate the existing vocabulary with `find kind=client_label` before
 inventing a name, and filter clients by label with `find kind=client labelNames=[…]`.
 
 Unlike the array parameters elsewhere in this reference, `addLabels` / `removeLabels` are **deltas,
@@ -184,9 +247,11 @@ Required: `action`. 3 actions; `report` has 5 sub-actions in `reportAction`.
 | `reportId` | string | report | Every sub-action but `approve_many`. |
 | `reportIds` | string[] | report (`approve_many`) | Up to 50 DRAFT reports. |
 | `notifyClient` | boolean | report (`approve`, `approve_many`) | Also push the client. Needs a **send**-tier connection. |
-| `clientFacingSummary` | string | report | |
+| `clientFacingSummary` | string | report | `update`: refused when the report already holds text a person wrote or edited, unless `overwrite`. |
+| `internalNotes` | string | report | `update`: refused when the report already holds a note a person wrote or edited (anything but the AI original), unless `overwrite`. |
+| `overwrite` | boolean | report (`update`) | Replace a client-facing text or internal note a person wrote or edited. Default false. |
 | `priority` | string | report | |
-| `sections` | object | report | |
+| `sections` | object | report | Its `client_facing_summary` / `priority` keys always follow those fields; `sections.internal_notes` is the AI original, so read `internalNotes`. A client only ever receives `sections.client_facing_summary`. |
 | `title` | string | note | |
 | `content` | string | note | |
 | `appointmentId` | string | note | |
@@ -217,11 +282,21 @@ Keys, all optional, all **numbers** (a string `"80"` is discarded, not parsed):
 
 | `reportAction` | Reads | Does |
 |---|---|---|
-| `update` | `reportId` + `clientFacingSummary` / `internalNotes` / `priority` / `sections` | Edits a DRAFT. |
+| `update` | `reportId` + `clientFacingSummary` / `internalNotes` / `priority` / `sections` (+ `overwrite`) | Edits a DRAFT. Will not replace a client-facing text or an internal note a person wrote or edited without `overwrite: true`; the refusal returns `existingClientFacingSummary` or `existingInternalNotes`. |
 | `approve` | `reportId` (+ `notifyClient`) | Publishes one DRAFT to the client's app **at once**. Refused without a client-facing summary. |
 | `approve_many` | `reportIds` (+ `notifyClient`) | Approves a batch. Each report is approved or **skipped with its reason** (already sent, no summary, not found); the response lists `approved` and `skipped`. Nothing approved at all is an error. |
 | `discard` | `reportId` | Discards a DRAFT. |
 | `unsend` | `reportId` | Takes a sent (APPROVED) report back to DRAFT: it leaves the client's app at once, you correct it with `update`, and `approve` sends it again. The client is never pushed twice for the same report. |
+
+**A person's wording is not overwritten silently.** `get kind=report` carries
+`clientSummaryEdited` on an AI-drafted report: `false` while the client-facing text is still the
+automation's draft, `true` once someone (the coach, or an agent) has rewritten it; it is absent on a
+hand-written report. `update` replaces an untouched draft or an empty summary freely, and refuses
+any other different text unless `overwrite: true`. Fold the coach's wording in, or ask, before you
+pass it. `internalNotes` follows the same rule: the automation's original note (still in
+`sections.internal_notes`) or an empty one is replaced freely, a note the coach wrote or edited
+needs `overwrite: true`. `priority` edits never need it. Edits carry no author, so a text **you**
+rewrote earlier in the session also reads as edited: check it is yours, then pass `overwrite: true`.
 
 Approving is **silent by default**: the report appears in the client's app with no notification.
 `notifyClient: true` also sends a "new progress report" push, once per report, and is held at the

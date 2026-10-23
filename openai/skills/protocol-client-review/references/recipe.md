@@ -32,7 +32,8 @@ Verb + param source: **[surface-core.md](../../protocol-reference/references/sur
    insights — each section is null-safe on its own failure, so a missing profile or empty task
    list won't blank out the rest of the bundle.
 
-   Use `get kind=client id=<clientId>` when you only need the base client record; reach for
+   Use `get kind=client id=<clientId>` when you only need the client record (stage name, current
+   labels, and the health/fitness/nutrition/behavioral profiles); reach for
    `review_client clientId=<clientId>` when the coach's question spans multiple areas (e.g. "how's
    this client doing overall") and you want the one-call bundle instead of several separate
    `find`/`get` calls.
@@ -43,10 +44,11 @@ Verb + param source: **[surface-core.md](../../protocol-reference/references/sur
 
 ## Gotchas
 
-- `find`'s filters (`status`, `isTemplate`, `clientId`, etc.) silently no-op for any kind whose
-  underlying legacy list tool doesn't support that filter — if a filtered `find kind=client` looks
-  like it ignored your filter, that's the known behavior, not a bug (see the "Filters that don't
-  apply just no-op" pitfall in `../../protocol-reference/references/pitfalls.md`).
+- `find` refuses a filter the chosen kind does not support (the error lists the ones it does
+  take), so a result that comes back is filtered by everything you sent. See the "Filters that
+  don't apply are refused" pitfall in `../../protocol-reference/references/pitfalls.md`.
+- Picking the client: `find kind=client query=<full name>` is a fuzzy search and can return a page
+  of near-namesakes. Take the row with `exactMatch: true`; if none has it, ask the coach which one.
 
 ## See also
 

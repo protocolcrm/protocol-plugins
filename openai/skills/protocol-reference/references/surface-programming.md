@@ -264,6 +264,42 @@ a value it rejects would render red in their UI. Valid: `"10"`, `"8-10"`, `"10 /
 `meters` `yd` `yards` `min` `s` `sec` — note `cal`, `km` and `in` are **not** supported by either
 side. Unilateral work ("10 each side") has no notation: put it in `notes` and keep `repRule` numeric.
 
+#### Rotating stations (a slot that changes every round)
+
+An EXERCISE row may carry `rotation`: more EXERCISE rows, one per round, for a station that changes
+each time round. The exercise itself is round 1, `rotation[0]` is round 2, and so on; round r plays
+option `(r - 1) mod n`, so it wraps when the group has more rounds than stations. Each option is an
+ordinary exercise row with its own `exerciseId`, `sets`, `repRule`, `weight` and rest. Distance and
+time go in `repRule` (`"1000m"`, `"60s"`), load in `weight`.
+
+- Only a group that plays in rounds rotates (set `rounds` on it; `CIRCUIT`, `HYROX_STYLE`, `EMOM`,
+  `SUPERSET`, `TABATA`, `LADDER` and the other round formats). On a group without rounds the slot
+  is just its round-1 exercise.
+- One level only: an option carrying its own `rotation` is refused.
+- Options follow the same grammar as `exercises`: `{ add:"EXERCISE", ... }` to create,
+  `{ ref:"<id>" }` to keep, `{ modify:"<id>", ... }` to change one. Modifying the slot without
+  sending `rotation` keeps its options; sending `rotation` replaces the list, and dropping an
+  option needs `confirmDelete` like any other row.
+
+A HYROX simulation, 8 rounds, a fixed 1000 m run then a station that rotates:
+
+```
+{ add:"GROUP", section:"MAIN", format:"HYROX_STYLE", rounds:8, exercises:[
+  { add:"EXERCISE", exerciseId:"<run>", sets:1, repRule:"1000m" },
+  { add:"EXERCISE", exerciseId:"<skierg>", sets:1, repRule:"1000m", rotation:[
+    { add:"EXERCISE", exerciseId:"<sled push>", sets:1, repRule:"50m", weight:"152kg" },
+    { add:"EXERCISE", exerciseId:"<sled pull>", sets:1, repRule:"50m", weight:"103kg" },
+    { add:"EXERCISE", exerciseId:"<burpee broad jump>", sets:1, repRule:"80m" },
+    { add:"EXERCISE", exerciseId:"<row>", sets:1, repRule:"1000m" },
+    { add:"EXERCISE", exerciseId:"<farmers carry>", sets:1, repRule:"200m", weight:"24kg" },
+    { add:"EXERCISE", exerciseId:"<sandbag lunges>", sets:1, repRule:"100m", weight:"20kg" },
+    { add:"EXERCISE", exerciseId:"<wall balls>", sets:1, repRule:"100", weight:"6kg" } ] } ] }
+```
+
+Round 1 is run + SkiErg, round 2 run + sled push, round 8 run + wall balls. A client's logged
+session marks each station entry with `rotationSlotId`, `rotationIndex` (0 = the slot itself) and
+`roundNumbers`, the round each logged set belongs to.
+
 ---
 
 ### `build_nutrition`
@@ -275,7 +311,8 @@ No required params (omit `templateId` to create).
 | `templateId` | string | Edit this template; omit to create. |
 | `name` | string | |
 | `userId` | string | Assign to a client; omit for a library template. |
-| `items` | object[] | The full **flat** item tree — a `LABEL` heading row followed by its foods as sibling `MEAL` rows, all top-level (foods do **not** nest inside the label; nested `items` are only for `GROUP` alternatives). A food row is `{ add:"MEAL", foodId, quantity, measure }`. **Replaces the tree** — see [the replace grammar](#the-replace-grammar-phases-items-groups). |
+| `items` | object[] | The full item tree. Top level: a `LABEL` row (a time of day) followed by its meal as a **sibling**, `{ add:"EMBEDDED_TEMPLATE", name, description?, items:[ foods ] }`, with the foods nested **inside the meal**. A food row is `{ add:"MEAL", foodId, quantity, measure }` (or `{ add:"MEAL", name }` with no match). Nothing nests inside a label. **Replaces the tree** — see [the replace grammar](#the-replace-grammar-phases-items-groups). |
+| `convertToMeals` | boolean | With `templateId` and no `items`: fold each label's loose food rows into one meal named after the label, and each option of a food choice into one meal (the editor's "Convert to meals"). Only when the coach asked. |
 | `confirmDelete` | boolean | `true` only after the coach confirmed deleting the rows a refused call listed. Dropping existing rows without it is refused. |
 | `metadata` | object | Partial patch. Only `name` / `description` / `tags` / `templateMode` are honored. |
 | `duplicateFrom` | string | Copy this template into the coach's own library (items, macros and mode carried; every row gets a new id, so re-read the copy before editing). A team owner's or admin's copy belongs to the business library (`ownerId` = the team owner), like everything they create. `name` / `metadata` apply to the copy; refuses `templateId`, `userId` and `items` in the same call. |
@@ -286,10 +323,23 @@ A top-level `name` renames the template on an **edit** too, not only on create.
 "My Meals/Recipes" entry). Pass it at create time so the template lands in the right place.
 Macros are computed for you — don't hand-total them.
 
-**Choose-one groups.** A `GROUP` row's `items` are its options. A `MEAL` there is a one-food
-option; a `GROUP` holding several `MEAL`s is **one** multi-food option (banana + apple). An option
-counts the **sum** of its foods and the group the **average** across its options, as the web
-builder shows it. Sending the tree back with `ref`s leaves it exactly as it was.
+**Meals.** A meal row's `name` and `description` (markdown method) are the meal's own; its foods
+come back from `get` in `embeddedTemplate.items` and are edited through the meal row's `items` with
+the same `ref` / `modify` / `add` (a `modify` on the meal without `items` keeps its foods). Its total
+is the sum of its foods. Pass `total: { calories, protein, carbs, fat }` on a meal row only when its
+foods carry no numbers or the coach gave the figures; it is then kept as set by hand. Use
+`{ add:"EMBEDDED_TEMPLATE", templateId }` instead to embed a saved library recipe (a snapshot).
+
+**Choose-one groups.** A `GROUP` row's `items` are its options. A meal row there is one option, the
+way the editor builds a choice. In older plans a `MEAL` food there is a one-food option and a
+`GROUP` holding several `MEAL`s is **one** multi-food option (banana + apple). An option counts the
+**sum** of its foods and the group the **average** across its options, as the web builder shows it.
+Sending the tree back with `ref`s leaves it exactly as it was.
+
+**Units.** `measure` must be one of the food's own unit names, spelled as `resolve_foods` lists
+them. One it lacks is saved on the food's default unit with the same quantity and reported in
+`unknownMeasures` (`rowId`, `requested`, `used`, `offered`) with a `warning`: fix those rows with
+`modify`.
 
 **Swapping a food.** `{ modify: <rowId>, foodId: <newFood> }` with no `name` renames the row to the
 new food, and a one-food option still named after the old food follows it; pass `name` to keep a

@@ -100,6 +100,9 @@ Three different things that all support a "template vs client copy" split.
 
 - The workout **is** its exercise-groups jsonb array. Writing it replaces the whole tree; there is
   no partial merge at the entity level.
+- A row inside a group may carry `rotation`, further exercise rows that replace it in rounds 2, 3,
+  ... of a group that plays in rounds (a rotating station). One level only. See
+  `surface-programming.md`, "Rotating stations".
 - `is_template` / public-library flags mirror `Program`'s.
 - Difficulty, experience level, unit system, training goal, and visibility are all string names.
   `template_mode` is the single enum stored as a numeric ordinal rather than a string — relevant
@@ -107,8 +110,10 @@ Three different things that all support a "template vs client copy" split.
 
 ### Nutrition template
 
-- Built as a flat item tree (LABEL headers + MEAL food rows) via `build_nutrition.items`, which
-  replaces the tree wholesale.
+- Built via `build_nutrition.items`, which replaces the tree wholesale. A day is `LABEL` rows (a
+  time of day), each followed at the top level by its meals: an `EMBEDDED_TEMPLATE` whose foods are
+  stored in `embeddedTemplate.items` (written inline as the meal row's `items`), or a `GROUP` of meals
+  the client picks one of. Older plans put loose `MEAL` food rows straight after a label instead.
 - `templateMode` selects where it lives for the client: `ADVANCED` = a day plan
   ("My Daily Nutrition"), `SIMPLE` = a recipe/meal entry ("My Meals/Recipes"). Set it at create
   time.

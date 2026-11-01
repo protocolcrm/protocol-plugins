@@ -19,30 +19,59 @@ plan for a coach whose whole practice is recipes produces something they will no
 ## Step 0 - find out how THIS coach works
 
 Do this once per account, before your first write. `find` with `kind: "nutrition"` and read a few of
-their existing plans with `get`. You are looking for which of three shapes they use:
+their existing plans with `get`. You are looking for which shape they use:
 
 | What you see | Their model | Build it with |
 |---|---|---|
-| `MEAL` rows carrying `foodId`, `quantity`, `measure`; day totals in `nutrients` | **Macro-tracked** | `build_nutrition` items, foods resolved first |
-| `LABEL` + `EMBEDDED_TEMPLATE` rows; `nutrients` all zero | **Recipe-book** | `build_nutrition` items, embedding existing recipes |
+| `LABEL` rows each followed by `EMBEDDED_TEMPLATE` meals whose foods sit in `embeddedTemplate.items` | **Meals** (the editor's default) | `build_nutrition`: a label, then a meal row holding its foods |
+| `LABEL` rows each followed by loose `MEAL` food rows | **Older plans** (labels and loose foods) | Keep that style when editing; `convertToMeals` only when the coach asks |
+| `LABEL` + `EMBEDDED_TEMPLATE` rows embedding library recipes; `nutrients` all zero | **Recipe-book** | `build_nutrition` items, embedding existing recipes |
 | Almost no nutrition templates; the food lives in the program's `content` collections | **Menu-as-content** | `build_program` content, not `build_nutrition` |
 
 Match what you find. If a coach's plans have no macros anywhere, that is their model - not missing
-data to helpfully fill in.
+data to helpfully fill in. A coach with no plans yet gets **meals**.
 
-## A. Macro-tracked day plans
+## A. Day plans made of meals (the default for anything new)
+
+This is what the coach's editor builds: a **label** is a time of day, and under it sits a **meal**
+with a name, an optional method and its foods. The client app shows each meal as one card.
 
 1. Read the client first (see `../protocol-client-review`) - the nutrition profile carries
    preferences, allergies, and dislikes that override any target.
-2. Resolve real foods with `manage_library` (`resolve_foods`). You need a `foodId` before you can
-   write a food row this way.
-3. Build with `build_nutrition`. The tree is **flat**: a meal is a `{ add: "LABEL", name: "Breakfast" }`
-   heading followed by its foods as *sibling* rows - `{ add: "MEAL", foodId, quantity, measure }` -
-   not nested inside it. Macros are computed from the tree; never pass `nutrients` yourself.
-4. Sanity-check as a coach would: are these portions a person would actually weigh out?
-5. Read it back with `get` and confirm the items landed before reporting.
+2. Resolve real foods with `manage_library` (`resolve_foods`). You need a `foodId` for a food that
+   should count toward macros. A food with no library match can be `{ add: "MEAL", name: "..." }`.
+3. Build with `build_nutrition`. The label and its meal are **siblings** at the top level; the foods
+   nest **inside the meal**:
 
-## B. Recipe-book plans (a day assembled from recipes)
+   ```
+   items: [
+     { add: "LABEL", name: "Breakfast 8:00" },
+     { add: "EMBEDDED_TEMPLATE", name: "Oats with whey", description: "Soak the oats overnight.",
+       items: [ { add: "MEAL", foodId: "<oats>", quantity: 60, measure: "gram" },
+                { add: "MEAL", foodId: "<whey>", quantity: 1, measure: "scoop" } ] },
+     { add: "LABEL", name: "Lunch 13:00" },
+     { add: "EMBEDDED_TEMPLATE", name: "Chicken rice bowl", items: [ ... ] }
+   ]
+   ```
+
+   Name each meal for what it is ("Chicken rice bowl"), not for the time - the label already says
+   when. Macros are computed from the foods; never pass `nutrients`. Only when a meal's foods carry
+   no numbers, or the coach gave you its figures, pass `total: { calories, protein, carbs, fat }` on
+   that meal; it is kept as set by hand.
+4. **A choice** ("pick one of these for lunch") is a `{ add: "GROUP", name: "Lunch", items: [ meal,
+   meal ] }` whose items are meal rows. Each meal becomes one option and the day counts their average.
+5. Sanity-check as a coach would: are these portions a person would actually weigh out?
+6. Read it back with `get` and confirm the meals landed before reporting. A meal's foods come back
+   in `embeddedTemplate.items`; to change one, send the meal row as `{ modify: "<mealId>", items: [
+   { ref: ... }, { modify: "<foodId>", quantity: 200 } ] }` inside the full list.
+
+**Older plans (labels followed by loose food rows).** Edit them in their own style - loose
+`{ add: "MEAL", foodId, quantity, measure }` rows straight after the label - unless the coach asks to
+modernise the plan. Then send `build_nutrition` with `templateId` and `convertToMeals: true` and no
+`items`: each label's foods become one meal named after the label, and each option of a food choice
+("Pick 1") becomes one meal named after the option, exactly as the editor's "Convert to meals" does.
+
+## B. Recipe-book plans (a day assembled from library recipes)
 
 The coach keeps a library of reusable recipes and composes each day out of them.
 
@@ -54,8 +83,9 @@ The coach keeps a library of reusable recipes and composes each day out of them.
 - The recipe is **snapshotted** into the day plan, so editing the recipe later does not rewrite
   plans already built from it. The embedded row's own `name` is empty - the name lives inside the
   snapshot, so read `embeddedTemplate.name`, not `name`.
-- **These plans total zero calories, and that is correct.** Reuse the coach's existing recipes
-  (`find kind=nutrition`, `isTemplate: true`) rather than inventing new ones.
+- Recipes written as plain ingredient lines carry no numbers, so such a plan can **total zero
+  calories, and that is correct.** Reuse the coach's existing recipes (`find kind=nutrition`,
+  `isTemplate: true`) rather than inventing new ones.
 
 ## C. Menu-as-content
 
@@ -101,6 +131,10 @@ recipe with the library version. Full grammar: `../protocol-reference/references
   key (`add` / `ref` / `modify`), and a row you omit is deleted. Keep untouched rows with
   `{ ref: "<id>" }`. A write that would delete rows is refused with the rows listed; repeat it with
   `confirmDelete: true` only after the coach agrees.
+- **Use a unit the food actually offers, spelled as `resolve_foods` lists it** ("cup, dry", not
+  "cup"). A unit the food lacks is saved on its default unit with your quantity - "1 cup" becomes
+  "1 g" - and comes back in `unknownMeasures` with the units it does offer. Fix every one of those
+  rows before you report the plan.
 - **Check `failCount` before you tell the operator it is done.** Rows the server cannot parse are
   skipped and the call still succeeds; `failCount: 3` means three foods are missing from the plan you
   are about to describe. If the whole write is refused, retry with the `templateId` you were handed -

@@ -59,6 +59,10 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
 - **A workout is two levels: groups, then movements inside them.** A movement needs a real
   `exerciseId` (resolve it with `find kind=exercise` - a name is not a reference), `sets`, and
   `repRule`. There is no `reps` field.
+- **A station that changes every round** (HYROX, a rotating circuit) is one slot with a `rotation`:
+  the slot is round 1, each `rotation` row is the next round's station, and the group needs
+  `rounds`. Do not fake it with one group per round. Shape and example:
+  `../protocol-reference/references/surface-programming.md`, "Rotating stations".
 - **Prescribe rest.** `restAfterSeconds` on each exercise, `restAfterGroupSeconds` on the block.
   Real coaches set it on most exercises; a session without rest reads half-finished to a client.
 - **Never put a client's name in a workout or nutrition-template title.** Assigning deep-copies

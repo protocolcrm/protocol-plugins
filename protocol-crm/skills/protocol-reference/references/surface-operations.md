@@ -417,6 +417,7 @@ Required: `action`. 2 actions, **tiered per action**: `record_payment` is `write
 | `currency` | string | create_purchase | e.g. `eur`. Defaults to the product's, then the shop's. |
 | `status` | string | create_purchase | `ACTIVE` (default: paid or started) or `PENDING` (awaiting payment). |
 | `purchasedAt` / `expiresAt` | string | create_purchase | ISO dates. `expiresAt` defaults to the product's access duration. |
+| `totalSessions` | number | create_purchase | Session credits on the purchase, a whole number 0-1000. Defaults to the product's count; set it to sell a pack with a different count, or sessions with no product. |
 | `paymentSchedule` | string | create_purchase | `PAID_IN_FULL` (default) or `INSTALLMENTS`. |
 | `installments` | object[] | create_purchase | `INSTALLMENTS` only: `[{ dueDate, amount, paid? }]`, at least two, summing to the total (including any exclusive tax). `paid: true` marks one already received, e.g. the first, taken up front. |
 | `purchaseId` | string | record_payment | The purchase; the earliest invoice still owed is used. |

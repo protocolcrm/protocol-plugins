@@ -107,7 +107,7 @@ need `write`, and `action=send` and `action=poll` need `send`.
   all-clients broadcast group lists its count, never its members.
 - `lastActivityAt`, and `lastMessage` (`preview`, `sentAt`, `unreadCount`, `senderId`,
   `fromClient`: true when a client wrote it, so "did the client write last" is one field; null
-  when the sender is unknown).
+  when the sender is unknown; and `reactions` and `photoReactions`, the same shapes as on a read message).
 - `draft` (`preview`, `updatedByName`, `updatedAt`) if one is open. The draft is shared by the
   owner and admins, so `updatedByName` says who last typed it.
 - on a 1:1, `client`: `id` and `name`, plus their `lifecycleStage` and `labels` (coach-internal, never shown
@@ -118,7 +118,13 @@ To find a client's 1:1, list with `clientId` and take the row with `isDirect: tr
 
 `read` returns `messages` (one page of `limit`, oldest first; page 1 is the newest), each with `senderId`, `senderName`,
 `senderRole` (`CLIENT`, `TRAINER`, `ADMIN`) and `fromClient`, and `authorId` when an admin replied
-as the owner; plus `unreadCount` for the coach's inbox and `draft`, the text already waiting in the
+as the owner, and `reactions`: one entry per emoji, `{emoji, by: [{userId, name, fromClient}]}`, `[]`
+when nobody reacted. Staff react as the shared inbox, so a coach's like shows the tenant owner's
+name with `fromClient: false`; that is how you tell whether a client's message was acknowledged.
+A message with several photos can also be reacted to one photo at a time (a client asking "which of
+these?" and the coach liking the ones to pick): those come apart in `photoReactions`, one entry per
+photo, `{mediaId, photo, reactions}`, where `photo` is its 1-based place among the message's photos
+and `reactions` has the same shape; `[]` when none. They never count in `reactions`. Plus `unreadCount` for the coach's inbox and `draft`, the text already waiting in the
 composer (`null` if none). Check `draft` before you write one. Reading marks nothing as read.
 The page is told by `page`, `total` (every message in the conversation) and `hasMore`; while older
 messages remain, `nextPage` is the page to pass for the next ones back, so a long thread is walked

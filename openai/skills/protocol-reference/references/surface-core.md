@@ -378,7 +378,7 @@ to delete the operator's work silently.
 
 | Key | Means |
 |---|---|
-| `add` | Create this row. **`build_program`: `add: true` (boolean).** `build_nutrition`: `add: "MEAL"` / `"LABEL"` / `"GROUP"` / `"SUPPLEMENT"` (the row type). |
+| `add` | Create this row. **`build_program`: `add: true` (boolean).** `build_nutrition`: `add: "LABEL"` / `"EMBEDDED_TEMPLATE"` (a meal) / `"MEAL"` (a food) / `"GROUP"` / `"SUPPLEMENT"` (the row type). |
 | `ref` | Keep this existing row, and its children, exactly as they are. Takes the row's id. |
 | `modify` | Patch this existing row. Takes the row's id. |
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "protocol-crm",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Operate your Protocol CRM by conversation: clients, programs, nutrition, check-ins, scheduling, and inbox triage.",
   "author": {
     "name": "Protocol",

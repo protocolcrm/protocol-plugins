@@ -347,6 +347,7 @@ Never describe a trend, a count, or "all of X" from a response carrying `hasMore
 | `support_ticket` | ✓ | ✓ | `ticketId` — see `manage_support` in `surface-operations.md` |
 | `article` | ✓ | ✓ | `articleId` — `get` returns the body as **Markdown**; `find` reads `status` (DRAFT/PUBLISHED), `scope` (mine/team), `query`, `category`. See `manage_content` in `surface-operations.md` |
 | `audience` | ✓ | — | list-only — the saved client segments articles are aimed at, with conditions and a live `memberCount`; `query` filters by name |
+| `brain_file` | ✓ | ✓ | the team's **company brain** (procedures, decisions, prices, skills), when the team has one. `find` lists paths (`query` filters by path text); `get` takes **`path`**, not `id`, and returns the text with its frontmatter. Only the paths the team shows in AI Brain; credential-looking files never. A 404 means no brain is connected |
 | `conversation` | ✓ | — | list-only |
 | `lifecycle_stage` | ✓ | — | list-only |
 | `lab` | ✓ | — | list-only |

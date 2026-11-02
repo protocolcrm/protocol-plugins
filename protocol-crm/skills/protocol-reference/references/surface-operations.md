@@ -258,7 +258,7 @@ Required: `action`. 7 actions.
 | `location` | string | create, update | |
 | `description` | string | create, update, reminder | |
 | `status` | string | update | |
-| `notifyParticipants` | boolean | create, update, cancel | Email every guest an invitation, update or cancellation with a calendar file. Needs a **send**-tier connection. |
+| `notifyParticipants` | boolean | create, update, cancel | Email every guest an invitation, update or cancellation with a calendar file. Confirm with the coach first. |
 | `formId` | string | reminder | The check-in form the reminder asks for. |
 | `recurrenceRule` | string | reminder | |
 | `responseWindowHours` | number | reminder | |
@@ -314,9 +314,8 @@ address - the client included, never the coach - an invitation, an update or a c
 with a calendar file keyed on the appointment, so the guest's own calendar adds, moves or removes
 the same event. On `update`, a guest hears only when something they see changed (time, title,
 location, link). Off by default: without it nobody is told. Because it reaches people outside the
-account, a call carrying it is held at the **send** tier: at `write` it is refused naming
-`notifyParticipants`, while the same call without the flag books, moves or cancels fine. Confirm
-with the coach before sending it. A client reminder never emails, whatever the flag says.
+account, confirm with the coach before sending it; the same call without the flag books, moves or
+cancels and tells nobody. A client reminder never emails, whatever the flag says.
 
 ---
 
@@ -346,11 +345,11 @@ go through Protocol (`report_to_developers`). Confirm with `find kind=automation
 assuming another kind exists. `run` needs `triggerData` - for
 PROGRESS_REPORT that is `{ entryId: "<progress entry uuid>" }`, for FORM_REPORT that is
 `{ submissionId: "<form submission uuid>" }`. **`run` is the
-only outward action here, and it is the one held to the `send` tier** (see `guardrails.md`): if
-this connection is at `write` (the default), calling `run` is refused with a
-`PermissionDeniedError` naming the tier needed - that is expected, not a bug, so tell the coach
-plainly and stop rather than escalating or falling back to `protocol-rest-escape`. If the
-connection is at `send`, confirm with the coach before calling it anyway: getting the payload
+only outward action here** (see `guardrails.md`): confirm it with the coach first. At `read`,
+calling `run` is refused with a `PermissionDeniedError` naming the tier needed - that is expected,
+not a bug, so tell the coach plainly and stop rather than escalating or falling back to
+`protocol-rest-escape`. At `write`,
+confirm with the coach before calling it anyway: getting the payload
 wrong still dispatches a real, client-facing execution, so it costs more than a wasted call.
 Authoring (create/update/activate/pause/archive) is a plain write, at `write` tier. Read what an
 execution actually did with `find kind=automation_run`.
@@ -390,7 +389,7 @@ caller's own role, never from input, so a coach's comment can never be posted as
 **`set_status` is Protocol team only.** A coach's agent can read and comment on a ticket it filed,
 but calling `set_status` is refused with a permission error reading "Only the Protocol team can
 change a ticket status" — it names no tier, because this is not a tier restriction at all: it is
-the service enforcing role, not the connection's `write`/`send` tier, so no tier upgrade fixes it
+the service enforcing role, not the connection's `read`/`write` tier, so no tier upgrade fixes it
 and no coach role can move a ticket's status or priority, ever. Passing neither `status` nor
 `priority` is a harmless no-op that leaves the ticket untouched.
 
@@ -404,8 +403,7 @@ ignores them rather than erroring.
 
 ### `manage_shop`
 
-Required: `action`. 2 actions, **tiered per action**: `record_payment` is `write`,
-`create_purchase` is `send`.
+Required: `action`. 2 actions, both `write`: `record_payment` and `create_purchase`.
 
 | Param | Type | Action | Notes |
 |---|---|---|---|
@@ -428,7 +426,7 @@ This is bookkeeping, the dashboard's **Add purchase** and **Mark as paid**. **No
 card, refunds, or sends an invoice or receipt** - those stay in the dashboard, behind wall 2 in
 `guardrails.md`.
 
-**`create_purchase` bills a client, which is why it is `send`.** The purchase appears in the
+**`create_purchase` bills a client, so confirm it with the coach first.** The purchase appears in the
 client's app; an installment plan arms the payment reminders that email or push the client as each
 installment comes due, and a time-limited purchase arms the access-expiry reminders (both only when
 the coach has switched reminders on); and an `ACTIVE` purchase notifies the coach's own connected

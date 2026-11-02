@@ -147,7 +147,7 @@ exactly as it binds anything else you write (`guardrails.md`).
 message lands in the conversation and pushes to the client's phone the moment you call it; there is
 no undo from this surface. It carries no AI label: to the client it is a message from the coach,
 exactly as if they had typed it, so only send text the coach asked for or confirmed, and when the
-coach wants to review it first, `draft` instead. Both need a `send` connection (a `write` connection
+coach wants to review it first, `draft` instead. Both need a `write` connection (a `read` connection
 is refused with a `PermissionDeniedError`), and both are claims-checked before anything is written:
 flagged text (the message, or a poll's question or any option) is refused with `flagged`, the
 phrases and why, and nothing is sent. Reword and send again; never work around it. A successful call
@@ -174,7 +174,7 @@ No schema-level required params, but you must pass either `clientId` **or** `cre
 | Param | Type | Notes |
 |---|---|---|
 | `clientId` | string | The client to edit; omit when passing `create`. |
-| `create` | object | `{ firstName, lastName, email, phoneNumber?, accessTier?, sendAccessInstructions? }`. Any other key is refused and nothing is created. `sendAccessInstructions: true` emails the client the app link and a login code, so it needs a **send**-tier connection; without it nothing is sent. |
+| `create` | object | `{ firstName, lastName, email, phoneNumber?, accessTier?, sendAccessInstructions? }`. Any other key is refused and nothing is created. `sendAccessInstructions: true` emails the client the app link and a login code; without it nothing is sent. Confirm with the coach first. |
 | `accessTier` | string enum | `LEAD` · `LOW_TICKET` · `CLIENT`. On an existing client, moves them between tiers; alongside `create`, the new client's tier. See *Access tiers* below. |
 | `lifecycleStageId` | string \| null | Move **this client** to a stage; `null` clears it. |
 | `assignTrainerId` | string | Assign this trainer. The response's `assignment` object carries the assignment `id`. |
@@ -252,7 +252,7 @@ Required: `action`. 3 actions; `report` has 5 sub-actions in `reportAction`.
 | `reportAction` | string enum | report | `update` · `approve` · `approve_many` · `discard` · `unsend` |
 | `reportId` | string | report | Every sub-action but `approve_many`. |
 | `reportIds` | string[] | report (`approve_many`) | Up to 50 DRAFT reports. |
-| `notifyClient` | boolean | report (`approve`, `approve_many`) | Also push the client. Needs a **send**-tier connection. |
+| `notifyClient` | boolean | report (`approve`, `approve_many`) | Also push the client. Confirm with the coach first. |
 | `clientFacingSummary` | string | report | `update`: refused when the report already holds text a person wrote or edited, unless `overwrite`. |
 | `internalNotes` | string | report | `update`: refused when the report already holds a note a person wrote or edited (anything but the AI original), unless `overwrite`. |
 | `overwrite` | boolean | report (`update`) | Replace a client-facing text or internal note a person wrote or edited. Default false. |
@@ -305,8 +305,8 @@ needs `overwrite: true`. `priority` edits never need it. Edits carry no author, 
 rewrote earlier in the session also reads as edited: check it is yours, then pass `overwrite: true`.
 
 Approving is **silent by default**: the report appears in the client's app with no notification.
-`notifyClient: true` also sends a "new progress report" push, once per report, and is held at the
-**send** tier because it reaches the client's phone. Either way, approve only what the coach said to
+`notifyClient: true` also sends a "new progress report" push, once per report, which reaches the
+client's phone. Either way, approve only what the coach said to
 send (`guardrails.md`).
 
 ---

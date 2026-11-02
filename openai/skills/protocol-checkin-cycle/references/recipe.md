@@ -53,8 +53,8 @@ Verb + param source: **[surface-clients.md](../../protocol-reference/references/
    ```
    record_progress action=report reportAction=approve_many reportIds=[<id>, <id>, ...]
    ```
-   Both are silent unless the coach also wants the client pushed: `notifyClient: true`, which needs
-   a `send`-tier connection.
+   Both are silent unless the coach also wants the client pushed: `notifyClient: true`, which
+   reaches the client's phone, so confirm it with the coach.
 5. **A report that went out wrong** is taken back with `reportAction=unsend reportId=<reportId>`:
    it returns to DRAFT and leaves the client's app at once. Correct it with `update`, then approve
    it again; the client is never pushed twice for the same report.

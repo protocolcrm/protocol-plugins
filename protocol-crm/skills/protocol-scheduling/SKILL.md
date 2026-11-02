@@ -20,18 +20,17 @@ notification to the client's phone. Know which is which before you call it.
 2. Find the existing appointment with `find` (`kind: "appointment"`) before updating or cancelling -
    never act on a guessed id.
 3. Call `schedule` with the right `action`:
-   - **Internal, runs autonomously, works at the `write` tier:** `create`, `update`, `cancel`,
-     `booking_config`, `gcal_disconnect`
-   - **Reaches the client, waits for approval, needs the `send` tier:** `send_reminder` (pushes
-     now), `reminder` (arms a scheduled push - it fires within minutes if the start time is now or
-     past). If this connection is at `write` (the default), expect a refusal, not a silent no-op.
+   - **Internal, runs autonomously:** `create`, `update`, `cancel`, `booking_config`,
+     `gcal_disconnect`
+   - **Reaches the client, waits for approval:** `send_reminder` (pushes now), `reminder` (arms a
+     scheduled push - it fires within minutes if the start time is now or past).
+   All of them need the `write` tier; a `read` connection is refused.
 4. When an action needs approval, tell the operator plainly what will be sent and to whom, and wait
    for their explicit yes before making the call. There is no built-in confirmation step on this
-   path, so that pause has to come from you. There is a real tier check, though: `send_reminder`
-   and `reminder` both need the `send` tier (see
-   `../protocol-reference/references/guardrails.md`), and if this connection is at the default
-   `write`, the call is refused outright with a `PermissionDeniedError`. That refusal is normal, not
-   a bug - tell the operator plainly which access level is needed and stop. Do not treat it as a
+   path, so that pause has to come from you: a `write` connection can send both at once (see
+   `../protocol-reference/references/guardrails.md`). At `read` the call is refused outright with
+   a `PermissionDeniedError`. That refusal is normal, not a bug - tell the operator plainly which
+   access level is needed and stop. Do not treat it as a
    missing feature, and do not fall back to `../protocol-rest-escape` to send it anyway; that key
    has no tier check and would override the operator's own choice at consent.
 5. Confirm what changed.

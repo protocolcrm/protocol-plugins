@@ -7,8 +7,8 @@ description: Use when no MCP verb or find/get kind covers what the operator need
 
 This skill hands you a `pk_live_` key that authenticates as the coach with full permissions on
 every REST route, with no scope or tier attached to it at all. That is a genuine difference from
-your MCP connection, which carries a real tier the coach chose at consent (`read`, `write`, or
-`send`) and which the platform genuinely enforces on the send-gated actions
+your MCP connection, which carries a real tier the coach chose at consent (`read` or `write`)
+and which the platform genuinely enforces, including on the outward actions
 (`message action=send` and `action=poll`, `schedule action=send_reminder`, `schedule
 action=reminder`, `manage_automations action=run`, `manage_shop action=create_purchase`) -
 see [`../protocol-reference/references/guardrails.md`](../protocol-reference/references/guardrails.md).
@@ -122,7 +122,7 @@ These are policy on the MCP surface too. For charging or refunding, deleting, an
 there is simply no verb at any tier (the surface can record a sale or a payment received, nothing
 more), and that absence has nothing to do with the tier system covered above. Messaging is the
 exception: `message action=send` and `action=poll` exist, and the tier system does gate them at
-`send`, but the tier is consent to the capability, not approval of a message, so wall 1 still
+`write`, but the tier is consent to the capability, not approval of a message, so wall 1 still
 holds only by sending what the coach asked for or confirmed. The difference here is that this key
 reaches the underlying REST routes directly, with no tier at all, so the same wall-policy has to
 hold without even a narrower verb surface or a tier check to lean on:

@@ -17,8 +17,8 @@ Reach for the raw REST API only when:
   same session while that gap gets fixed upstream.
 
 Don't reach for the API assuming it buys you something MCP won't allow - if anything, it is the
-opposite. This connection carries whatever single tier the coach picked at consent (`read`,
-`write`, or `send`, `write` by default; see `guardrails.md`), and the platform genuinely enforces
+opposite. This connection carries whatever single tier the coach picked at consent (`read` or
+`write`, `write` by default; see `guardrails.md`), and the platform genuinely enforces
 it in two layers: verbs above the connection's tier are absent from the MCP tool list entirely, and
 any call that still reaches above the tier is refused with a `PermissionDeniedError`. A REST key
 has no tier at all: it authenticates as the coach with **full permissions**, on every route,
@@ -74,7 +74,7 @@ Authorization: Bearer pk_live_<48 hex characters>
 | Store | Table | Who it authenticates as | Format |
 |---|---|---|---|
 | **API access keys** (this doc) | `api_access_keys` | The owner who minted it, full permissions, on any `@Authorized()` REST route | `pk_live_<48 hex>` |
-| MCP agent connections | `agent_connections` | A coach principal, tier-scoped (`read`/`write`/`send`, cumulative). The coach picks exactly one tier at consent when they connect this plugin (`write` by default); the client's requested scope is discarded and never honored. Platform-enforced: a call above the connection's tier is refused. | `pk_<48 hex>` (no `live_`), see [`../../protocol-reference/SKILL.md`](../../protocol-reference/SKILL.md) |
+| MCP agent connections | `agent_connections` | A coach principal, tier-scoped (`read`/`write`, cumulative; a legacy `send` connection works as `write`). The coach picks exactly one tier at consent when they connect this plugin (`write` by default); the client's requested scope is discarded and never honored. Platform-enforced: a call above the connection's tier is refused. | `pk_<48 hex>` (no `live_`), see [`../../protocol-reference/SKILL.md`](../../protocol-reference/SKILL.md) |
 | Legacy `api_keys` | `api_keys` | Tenant only, no per-user actor, no soft-revoke/audit trail. `DELETE /v1/auth/apiKey/:apiKeyId` hard-deletes the row (WordPress/Zapier) | plaintext, on `/v1/auth/apiKey`. Left untouched, do not extend |
 
 This is a deliberate three-way split, not drift — mixing REST keys into `agent_connections` would

@@ -22,7 +22,7 @@ see `pitfalls.md` for why a wrong key is worse than an error.
 Transport: MCP over remote HTTP, one route (`POST /mcp`), stateless — no session state survives
 between calls. Auth is a per-coach key; every call runs tenant-scoped to that one coach.
 
-Tiers exist (`read` < `write` < `send`, cumulative), and this connection is not exempt from them:
+Tiers exist (`read` < `write`, cumulative), and this connection is not exempt from them:
 the coach chose one of them at consent when they installed, and `write` is the default. Enforcement
 is two-layered: the tool list itself is tier-filtered (a `read` connection's `listTools` never
 includes the write verbs at all - they are **absent**, not refused), and a call above the
@@ -30,9 +30,8 @@ connection's tier is also refused at call time, as defense-in-depth. See `guardr
 full model and what to do about either. Every verb in this file lists at `read` or `write`
 (`find`/`get`/`review_client`/`report`/`message`/`guide` are `read`; `report_to_developers` is `write`) -
 so if the coach chose `read` only, `report_to_developers` itself will simply be absent from your
-tool list, not denied when you try to call it. (`message` lists at `read`, but `action=draft`
-and `action=clear_draft` need `write`, and `action=send` and `action=poll`, which reach a client,
-need `send`.)
+tool list, not denied when you try to call it. (`message` lists at `read`, but `action=draft`,
+`action=clear_draft`, `action=send` and `action=poll` need `write`; the last two reach a client.)
 
 ## Verb index
 
@@ -70,8 +69,8 @@ now), `schedule action=reminder` (arms a recurring push), `manage_automations ac
 (dispatches an execution whose post-actions can email or WhatsApp), and `manage_shop
 action=create_purchase` (bills the client: it shows in their app and arms payment and expiry
 reminders). `message` works the other way round: it lists at `read` so a read-only connection keeps
-the inbox, `action=draft` needs `write`, and `action=send` and `action=poll`, which put text in a
-client's chat, need `send`. If this connection is below the tier
+the inbox, and `action=draft`, `action=send` and `action=poll` (the last two put text in a client's
+chat) need `write`. If this connection is below the tier
 an action needs, the call is refused by the platform with a `PermissionDeniedError` naming the tier
 - tell the coach plainly and stop, per `guardrails.md`. Never treat that refusal as a reason to fall back to a direct API key.
 
@@ -449,10 +448,9 @@ that file as `markdown`. Read-only. Call it before multi-step work you have no p
 
 ---
 
-## Send tier
+## Outward actions
 
-`schedule`, `manage_automations` and `manage_shop` are the three verbs with an action gated to this
-tier; their full parameter and action detail lives in `surface-operations.md`, not here. `send` is
-opt-in: the coach must specifically choose it at consent, and the default is `write`, so do not
-assume this connection has it. See `guardrails.md` for exactly which four action calls on these
-verbs need `send`, and what to do if a call to one of them is refused.
+`schedule`, `manage_automations` and `manage_shop` each carry an action that reaches a client; their
+full parameter and action detail lives in `surface-operations.md`, not here. They need `write`, like
+the rest of these verbs (a separate `send` tier held them until 2026-11-02). See `guardrails.md` for
+exactly which calls reach a person, and confirm each with the coach before you make it.

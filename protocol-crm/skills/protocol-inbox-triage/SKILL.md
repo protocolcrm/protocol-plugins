@@ -42,7 +42,7 @@ actually need the operator.
 - Reading messages is not replying. Triage leaves replies as drafts (`message action: "draft"`,
   needs `write`): a draft waits in that conversation's composer for the coach to send, and never
   reaches the client. Say it is a draft; never say sent. Sending (`message action: "send"`) needs a
-  `send` connection and the coach asking for that exact reply; never send from triage on your own
+  `write` connection and the coach asking for that exact reply; never send from triage on your own
   judgement, and never route around a refused send - see `../protocol-rest-escape` for what it
   costs to do it anyway.
 - Say what you cleared, always. Silent triage is indistinguishable from losing things.

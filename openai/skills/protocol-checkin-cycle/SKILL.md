@@ -32,7 +32,8 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
    per entry. Budget for that before promising a full-history analysis.
 3. Record with `record_progress`, choosing the right `action`:
    - `entry` - a check-in's numbers
-   - `report` - triage an AI progress report
+   - `report` - triage an AI progress report, or `reportAction=create` a draft for a check-in
+     that has none (the team writes its own feedback, or the report automation is paused)
    - `note` - a meeting note
 
    **Correcting a number** ("she misread the scale, it was 80.4") is `entry` with the

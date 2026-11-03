@@ -132,6 +132,7 @@ every endpoint — **the live spec is the source of truth for exact routes, para
 | Nutrition templates | `/v1/nutrition/templates` |  |
 | Tasks | `/v1/tasks` |  |
 | Progress entries | `/v1/progress-entries` |  |
+| Progress reports | `/v1/progress-entry-reports` | `POST` writes a DRAFT (same as `record_progress reportAction=create`, which is the MCP path; prefer it). `/:id/approve` publishes to the client: **coach approval first.** |
 | Appointments | `/v1/scheduling/appointments` |  |
 | Conversations | `/v1/communication/conversations` |  |
 | Messages | `/v1/communication/messages` | **WALL 1. Reading is fine. Sending a message to a client needs explicit coach approval.** |

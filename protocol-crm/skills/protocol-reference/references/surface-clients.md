@@ -235,12 +235,12 @@ previousAccessTier, changed }`.
 
 ### `record_progress`
 
-Required: `action`. 3 actions; `report` has 5 sub-actions in `reportAction`.
+Required: `action`. 3 actions; `report` has 6 sub-actions in `reportAction`.
 
 | Param | Type | Action | Notes |
 |---|---|---|---|
 | `action` | string enum | — | **Required.** `entry` · `report` · `note` |
-| `progressEntryId` | string | entry | Update this check-in; omit to create. |
+| `progressEntryId` | string | entry, report (`create`) | entry: update this check-in; omit to create. report `create`: the check-in the draft is about. |
 | `clientId` | string | entry, note | |
 | `entryDate` | string | entry (create) | `YYYY-MM-DD` |
 | `measurements` | object | entry (**create and update**) | The numbers. See *Measurements* below. |
@@ -249,8 +249,8 @@ Required: `action`. 3 actions; `report` has 5 sub-actions in `reportAction`.
 | `internalNotes` | string | entry, report | |
 | `status` | string | entry (update) | Free-form tenant status name. |
 | `labels` | object[] | entry (update) | |
-| `reportAction` | string enum | report | `update` · `approve` · `approve_many` · `discard` · `unsend` |
-| `reportId` | string | report | Every sub-action but `approve_many`. |
+| `reportAction` | string enum | report | `create` · `update` · `approve` · `approve_many` · `discard` · `unsend` |
+| `reportId` | string | report | Every sub-action but `create` and `approve_many`. |
 | `reportIds` | string[] | report (`approve_many`) | Up to 50 DRAFT reports. |
 | `notifyClient` | boolean | report (`approve`, `approve_many`) | Also push the client. Confirm with the coach first. |
 | `clientFacingSummary` | string | report | `update`: refused when the report already holds text a person wrote or edited, unless `overwrite`. |
@@ -288,6 +288,7 @@ Keys, all optional, all **numbers** (a string `"80"` is discarded, not parsed):
 
 | `reportAction` | Reads | Does |
 |---|---|---|
+| `create` | `progressEntryId` + `clientFacingSummary` / `internalNotes` (+ `priority`) | Writes a DRAFT for a check-in that has no report, for when the coach's own agent writes the feedback instead of the report automation (or the automation is paused). Sends nothing; `approve` stays a separate call. Needs at least one of the two texts. Refused when the check-in already has a DRAFT or sent report: the refusal lists them in `existingReports`, so `update` that one instead (a discarded one does not count). |
 | `update` | `reportId` + `clientFacingSummary` / `internalNotes` / `priority` / `sections` (+ `overwrite`) | Edits a DRAFT. Will not replace a client-facing text or an internal note a person wrote or edited without `overwrite: true`; the refusal returns `existingClientFacingSummary` or `existingInternalNotes`. |
 | `approve` | `reportId` (+ `notifyClient`) | Publishes one DRAFT to the client's app **at once**. Refused without a client-facing summary. |
 | `approve_many` | `reportIds` (+ `notifyClient`) | Approves a batch. Each report is approved or **skipped with its reason** (already sent, no summary, not found); the response lists `approved` and `skipped`. Nothing approved at all is an error. |

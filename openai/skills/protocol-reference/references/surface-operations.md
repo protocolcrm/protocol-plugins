@@ -243,16 +243,19 @@ you are genuinely working the whole list; it is the most expensive read on the s
 
 ### `schedule`
 
-Required: `action`. 7 actions.
+Required: `action`. 8 actions.
 
 | Param | Type | Action | Notes |
 |---|---|---|---|
-| `action` | string enum | — | **Required.** `create` · `update` · `cancel` · `reminder` · `booking_config` · `gcal_disconnect` · `send_reminder` |
-| `appointmentId` | string | update, cancel, send_reminder | |
+| `action` | string enum | — | **Required.** `create` · `update` · `cancel` · `reminder` · `assign_reminder` · `booking_config` · `gcal_disconnect` · `send_reminder` |
+| `appointmentId` | string | update, cancel, send_reminder, assign_reminder | |
+| `assigneeId` | string \| null | assign_reminder | The coach to assign (`find kind=team_member`), or `null` to clear. Required: leaving it out is refused. |
+| `appointmentIds` | string[] | assign_reminder | Several reminders. |
+| `clientIds` | string[] | assign_reminder | Several clients; each one's live reminders are assigned. |
 | `title` | string | create, update, reminder | |
 | `startTime` | string | create, update, reminder | ISO-8601 instant. |
 | `endTime` | string | create, update, reminder | ISO-8601 instant. On `reminder` it is the end of the first response window: the same thing as `responseWindowHours`, so send either; a disagreement is refused. |
-| `clientId` | string | create, reminder | |
+| `clientId` | string | create, reminder, assign_reminder | On `assign_reminder`: that client's live reminders. |
 | `type` | string | create, update | |
 | `modality` | string | create, update | |
 | `location` | string | create, update | |
@@ -291,6 +294,22 @@ arms a real client-facing push, and it fires within minutes if `startTime` is no
 (a `startTime` in the future just delays it to that time, it does not make the call itself safe to
 skip approval for). Confirm with the coach what will be sent and to whom before calling it, the
 same as `send_reminder` above.
+
+`action: "assign_reminder"` sets who a client's check-in reminders are assigned to: the team member a
+submitted check-in lands on, which is `metadata.assigneeId` on the reminder and not its trainer.
+`assigneeId` plus any of `appointmentId` / `appointmentIds` / `clientId` / `clientIds`, up to 500 in
+a call, so a team's whole list goes in one or two calls. By client means each client's **live**
+reminders: not cancelled, and recurring or not yet ended. A series takes its upcoming moved
+occurrences along.
+
+The assignee must be an active coach or admin of this team; anything else refuses the whole call and
+writes nothing. After that each reminder stands alone: a coach without OWNER or ADMIN can only change
+reminders they own, and the others come back in `failed` while the rest land. The result gives
+`updated`, `unchanged`, `reminders` (each with its `previousAssigneeId`), `failed` and
+`clientsWithoutReminder`. Every change lands in the client's history as
+`reminder.assignee_changed`. It tells nobody. It applies from the next occurrence: a to-do already
+sent keeps the assignee it was sent with. A check-in with no assignee of its own falls to the team's
+default, set under Clients > Configuration.
 
 `action: "booking_config"` writes the coach's **public** booking page. **Read it first**
 (`read: true`). `globalSettings` is merged, so send only the keys you are changing;

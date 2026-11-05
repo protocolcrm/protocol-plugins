@@ -20,7 +20,8 @@ notification to the client's phone. Know which is which before you call it.
 2. Find the existing appointment with `find` (`kind: "appointment"`) before updating or cancelling -
    never act on a guessed id.
 3. Call `schedule` with the right `action`:
-   - **Internal, runs autonomously:** `create`, `update`, `cancel`, `booking_config`,
+   - **Internal, runs autonomously:** `create`, `update`, `cancel`, `assign_reminder`
+     (who a client's check-in reminders are assigned to, one or many), `booking_config`,
      `gcal_disconnect`
    - **Reaches the client, waits for approval:** `send_reminder` (pushes now), `reminder` (arms a
      scheduled push - it fires within minutes if the start time is now or past).

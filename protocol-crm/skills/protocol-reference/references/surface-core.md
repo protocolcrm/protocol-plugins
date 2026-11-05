@@ -95,7 +95,7 @@ Required: `kind`.
 | `scope` | string | **Whose library.** `mine` (yours, unshared), `team` (shared with the team), `all` (default). Applies to `kind=workout` / `nutrition` / `program` / `exercise` / `media`. |
 | `status` | string | Status filter (where supported). `kind=progress` takes a comma list of `PENDING`, `PROCESSING`, `DONE`, `CONFIRMED`: `PENDING,PROCESSING` is the open queue. `kind=task` takes `OPEN` or `COMPLETED` (either case), the value task rows carry. |
 | `assigneeId` | string | `kind=task`: tasks owned by this coach. `kind=progress`: check-ins whose review is assigned to this coach. Coach ids come from `find kind=team_member`. |
-| `type` | string | `kind=media`: `IMAGE`/`VIDEO`/`AUDIO`/`FILE`/`DOCUMENT`. `kind=progress`: `REMINDER` (answered a check-in reminder), `AD_HOC` (logged unprompted), `COACH` (recorded by the coach). A `COACH` entry carrying the intake `formId` is the **intake questionnaire, not a check-in**. |
+| `type` | string | `kind=media`: `IMAGE`/`VIDEO`/`AUDIO`/`FILE`/`DOCUMENT`. `kind=progress`: `REMINDER` (answered a check-in reminder), `AD_HOC` (logged unprompted), `COACH` (recorded by the coach). A `COACH` entry carrying the intake `formId` is the **intake questionnaire, not a check-in**. `CHAT` (a coach converted the client's chat messages into it). |
 | `limit` | number | Result cap. |
 | `offset` | number | Skip this many (paged kinds, see *Paging* below). |
 | `muscleGroup` | string | `kind=exercise` — primary muscle group (e.g. CHEST, BACK, THIGHS). |

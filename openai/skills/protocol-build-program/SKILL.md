@@ -18,7 +18,9 @@ client's profile, and confusing a template with a client's copy.
 A worked end-to-end example of this task: [recipe](./references/recipe.md).
 
 1. Read the client first (see `../protocol-client-review`). Training age, injuries, available days,
-   and equipment all come from the profiles - build to those, not to a generic template.
+   and equipment all come from the profiles - build to those, not to a generic template. Read
+   `coachNotes` on all four profiles before anything else there: it is what the coach wrote down
+   themselves (a knee problem, a travel week), and it outranks the longer onboarding `notes`.
 2. Confirm the exact parameter names in `../protocol-reference/references/surface-programming.md` before
    writing. `build_program` and `build_workout` have specific, easy-to-mistake argument shapes.
 3. Build the structure with `build_program` (metadata, phases, content), and individual sessions with

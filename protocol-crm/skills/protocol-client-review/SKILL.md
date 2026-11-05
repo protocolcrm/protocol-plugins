@@ -23,7 +23,8 @@ A worked end-to-end example of this task: [recipe](./references/recipe.md).
    profiles, programs, nutrition, progress, appointments, tasks, and insights - use it instead of a
    dozen `get` calls.
 3. Read what is actually there before summarising. Note the last check-in date, the current program
-   phase, and anything overdue.
+   phase, and anything overdue. Each profile under `profiles` carries two notes: `coachNotes` is what
+   the coach wrote and comes first; `notes` is the onboarding text.
 4. Answer in the operator's terms - what changed, what needs a decision, what you would do next.
    Lead with the thing that needs them, not a data dump.
 

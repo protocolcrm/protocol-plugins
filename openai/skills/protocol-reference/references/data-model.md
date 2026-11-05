@@ -189,7 +189,7 @@ ticks. Repairing those is a deliberate, dry-runnable operation a human runs.
 
 | Entity | Shape notes |
 |---|---|
-| `ProgressEntry` (the check-in) | `status` is a **free-form tenant status name**, not an enum, defaulting to `PENDING`. `measurements` / `answers` / `labels` / `media` are jsonb pass-through. `source` records provenance: `REMINDER`, `AD_HOC`, `COACH`, or null for legacy rows. |
+| `ProgressEntry` (the check-in) | `status` is a **free-form tenant status name**, not an enum, defaulting to `PENDING`. `measurements` / `answers` / `labels` / `media` are jsonb pass-through. `source` records provenance: `REMINDER`, `AD_HOC`, `COACH`, `CHAT`, or null for legacy rows. |
 | `Task` (kanban) | A task's column FK is NOT NULL — a task always lives in a column. Assignees and labels are many-to-many join tables; subtasks are ordered by `position`. Client / creator / source-task scalar ids are read-only mirrors, and a subtask's own `completedById` / `assigneeId` scalars follow the same read-only-mirror shape underneath `manage_tasks`'s `assigneeId` param. |
 | `Appointment` | `type`, `status`, `modality`, cancellation reason, exception type are all plain string names. Participant info and metadata are jsonb blobs. |
 | `Conversation` / `Message` | Conversation `type`: `DIRECT` · `GROUP` · `INFO`. Per-participant delivery state (`SENT` · `DELIVERED` · `READ` · `FAILED`) lives inside a jsonb array, not a column. |
